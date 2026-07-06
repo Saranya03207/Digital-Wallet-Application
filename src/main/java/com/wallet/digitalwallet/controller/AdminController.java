@@ -1,6 +1,6 @@
 package com.wallet.digitalwallet.controller;
 
-import java.math.BigDecimal;
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,7 +8,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.wallet.digitalwallet.dto.DashboardResponse;
+import com.wallet.digitalwallet.dto.AdminDashboardResponse;
+import com.wallet.digitalwallet.entity.Transaction;
+import com.wallet.digitalwallet.repository.TransactionRepository;
 import com.wallet.digitalwallet.service.AdminService;
 
 @RestController
@@ -18,38 +20,30 @@ public class AdminController {
     @Autowired
     private AdminService adminService;
 
-    @GetMapping("/total-users")
-    public long getTotalUsers() {
-        return adminService.getTotalUsers();
-    }
-    
-    @GetMapping("/total-transactions")
-    public long getTotalTransactions() {
-        return adminService.getTotalTransactions();
-    }
-    
-    @GetMapping("/total-wallet-balance")
-    public BigDecimal getTotalWalletBalance() {
-        return adminService.getTotalWalletBalance();
-    }
-    
-    @GetMapping("/active-users")
-    public long getActiveUsersCount() {
-        return adminService.getActiveUsersCount();
-    }
-
-    @GetMapping("/blocked-users")
-    public long getBlockedUsersCount() {
-        return adminService.getBlockedUsersCount();
-    }
     @GetMapping("/dashboard")
-    public DashboardResponse getDashboard() {
+    public AdminDashboardResponse getDashboard() {
 
         return adminService.getDashboard();
     }
-    @GetMapping("/transaction-stats")
-    public Map<String, Long> getTransactionStats() {
+    
+    @GetMapping("/all-transactions")
+    public List<Transaction> allTransactions(){
 
-        return adminService.getTransactionStats();
+        return adminService.getAllTransactions();
+
+    }
+    
+    @GetMapping("/analytics/type")
+    public Map<String, Long> transactionTypeAnalytics() {
+
+        return adminService.getTransactionTypeAnalytics();
+
+    }
+    
+    @GetMapping("/analytics/daily")
+    public Map<String, Long> dailyAnalytics() {
+
+        return adminService.getDailyTransactions();
+
     }
 }

@@ -1,6 +1,9 @@
 package com.wallet.digitalwallet.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 
 import java.util.List;
 import com.wallet.digitalwallet.entity.Transaction;
@@ -8,7 +11,6 @@ import com.wallet.digitalwallet.entity.Wallet;
 
 import org.springframework.web.bind.annotation.*;
 import com.wallet.digitalwallet.dto.TransferMoneyRequest;
-import com.wallet.digitalwallet.dto.WithdrawMoneyRequest;
 import com.wallet.digitalwallet.dto.AddMoneyRequest;
 import com.wallet.digitalwallet.service.WalletService;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -52,5 +54,30 @@ public class WalletController {
             @PathVariable Long userId) {
 
         return walletService.getWalletDetails(userId);
+    }
+    
+    @GetMapping(
+            "/statement/{userId}")
+    public ResponseEntity<byte[]>
+    downloadStatement(
+            @PathVariable
+            Long userId)
+            throws Exception {
+
+        byte[] pdf =
+                walletService
+                .downloadStatement(
+                        userId);
+
+        return ResponseEntity.ok()
+
+                .header(
+                        HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=WalletPayStatement.pdf")
+
+                .contentType(
+                        MediaType.APPLICATION_PDF)
+
+                .body(pdf);
     }
 }

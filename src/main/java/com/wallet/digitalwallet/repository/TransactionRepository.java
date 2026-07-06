@@ -17,4 +17,6 @@ public interface TransactionRepository
 	
     long countByTransactionType(
             TransactionType transactionType);
+    
+    long count();
 }

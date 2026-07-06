@@ -201,7 +201,7 @@ public class UserService {
 
 		if (!matched) {
 
-			throw new RuntimeException("Invalid Password");
+		    throw new RuntimeException("Invalid Password");
 		}
 
 		LoginResponse response = new LoginResponse();

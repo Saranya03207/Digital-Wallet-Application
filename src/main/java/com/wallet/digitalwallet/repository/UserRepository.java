@@ -21,7 +21,7 @@ public interface UserRepository
             String fullname);
 
     Optional<User> findByUpiId(String upiId);
-    
+
     boolean existsByEmail(
             String email);
 

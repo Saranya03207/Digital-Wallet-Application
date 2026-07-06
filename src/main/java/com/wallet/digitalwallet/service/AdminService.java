@@ -1,18 +1,24 @@
 package com.wallet.digitalwallet.service;
 
 import java.math.BigDecimal;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.wallet.digitalwallet.dto.DashboardResponse;
+import com.wallet.digitalwallet.dto.AdminDashboardResponse;
 import com.wallet.digitalwallet.entity.Status;
+import com.wallet.digitalwallet.entity.Transaction;
 import com.wallet.digitalwallet.entity.TransactionType;
+import com.wallet.digitalwallet.entity.Wallet;
 import com.wallet.digitalwallet.repository.TransactionRepository;
 import com.wallet.digitalwallet.repository.UserRepository;
 import com.wallet.digitalwallet.repository.WalletRepository;
+
 
 @Service
 public class AdminService {
@@ -21,70 +27,104 @@ public class AdminService {
     private UserRepository userRepository;
 
     @Autowired
-    private TransactionRepository transactionRepository;
-
-    @Autowired
     private WalletRepository walletRepository;
 
-    // Total Users
-    public long getTotalUsers() {
-        return userRepository.count();
+    @Autowired
+    private TransactionRepository transactionRepository;
+
+    public AdminDashboardResponse getDashboard() {
+
+        AdminDashboardResponse response =
+                new AdminDashboardResponse();
+
+        response.setTotalUsers(
+                userRepository.count());
+
+        response.setActiveUsers(
+                userRepository.countByStatus(
+                        Status.ACTIVE));
+
+        response.setBlockedUsers(
+                userRepository.countByStatus(
+                        Status.BLOCKED));
+
+        response.setTotalTransactions(
+                transactionRepository.count());
+
+        BigDecimal total =
+                BigDecimal.ZERO;
+
+        for (Wallet wallet :
+                walletRepository.findAll()) {
+
+            total =
+                    total.add(
+                            wallet.getBalance());
+        }
+
+        response.setTotalWalletBalance(total);
+
+        return response;
     }
+    
+    public List<Transaction> getAllTransactions(){
 
-    // Total Transactions
-    public long getTotalTransactions() {
-        return transactionRepository.count();
+        return transactionRepository
+                .findAll();
     }
+    
+    public Map<String, Long> getTransactionTypeAnalytics() {
 
-    // Total Wallet Balance
-    public BigDecimal getTotalWalletBalance() {
-        return walletRepository.getTotalWalletBalance();
+        Map<String, Long> map =
+                new HashMap<>();
+
+        map.put(
+                "TRANSFER",
+                transactionRepository
+                        .countByTransactionType(
+                                TransactionType.TRANSFER));
+
+        map.put(
+                "ADD_MONEY",
+                transactionRepository
+                        .countByTransactionType(
+                                TransactionType.ADD_MONEY));
+
+        map.put(
+                "WITHDRAW",
+                transactionRepository
+                        .countByTransactionType(
+                                TransactionType.WITHDRAW));
+
+        return map;
+
     }
+    
+    public Map<String, Long> getDailyTransactions() {
 
-    // Active Users Count
-    public long getActiveUsersCount() {
-        return userRepository.countByStatus(Status.ACTIVE);
-    }
+        Map<String, Long> map =
+                new LinkedHashMap<>();
 
-    // Blocked Users Count
-    public long getBlockedUsersCount() {
-        return userRepository.countByStatus(Status.BLOCKED);
-    }
+        List<Transaction> list =
+                transactionRepository.findAll();
 
-    // Dashboard API
-    public DashboardResponse getDashboard() {
+        DateTimeFormatter formatter =
+                DateTimeFormatter.ofPattern("dd-MM");
 
-        DashboardResponse dashboard = new DashboardResponse();
+        for(Transaction txn : list){
 
-        dashboard.setTotalUsers(getTotalUsers());
-        dashboard.setActiveUsers(getActiveUsersCount());
-        dashboard.setBlockedUsers(getBlockedUsersCount());
-        dashboard.setTotalTransactions(getTotalTransactions());
-        dashboard.setTotalWalletBalance(getTotalWalletBalance());
+            String day =
+                    txn.getTransactionDate()
+                            .format(formatter);
 
-        return dashboard;
-    }
+            map.put(
+                    day,
+                    map.getOrDefault(day,0L)+1
+            );
 
-    // Transaction Statistics
-    public Map<String, Long> getTransactionStats() {
+        }
 
-        Map<String, Long> stats = new HashMap<>();
+        return map;
 
-        stats.put(
-                "addMoneyTransactions",
-                transactionRepository.countByTransactionType(
-                        TransactionType.ADD_MONEY));
-
-        stats.put(
-                "transferTransactions",
-                transactionRepository.countByTransactionType(
-                        TransactionType.TRANSFER));
-
-        stats.put(
-                "withdrawTransactions",
-                transactionRepository.countByTransactionType(
-                        TransactionType.WITHDRAW));
-
-        return stats;
     }
 }

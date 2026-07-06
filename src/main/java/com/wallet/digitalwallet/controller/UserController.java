@@ -130,7 +130,7 @@ public class UserController {
     @PostMapping("/upload-image/{id}")
     public User uploadImage(
             @PathVariable Long id,
-            @RequestParam("file") MultipartFile file)
+             @RequestParam("file") MultipartFile file)
             throws IOException {
 
         return userService.uploadProfileImage(id, file);

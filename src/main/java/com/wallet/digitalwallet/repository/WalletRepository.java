@@ -1,5 +1,6 @@
 package com.wallet.digitalwallet.repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.math.BigDecimal;
 import org.springframework.data.jpa.repository.Query;
@@ -14,5 +15,6 @@ public interface WalletRepository extends JpaRepository<Wallet, Long> {
 
 	@Query("SELECT SUM(w.balance) FROM Wallet w")
 	BigDecimal getTotalWalletBalance();
-
+	
+	List<Wallet> findAll();
 }

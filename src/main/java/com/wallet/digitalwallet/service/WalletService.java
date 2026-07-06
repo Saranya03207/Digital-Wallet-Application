@@ -40,6 +40,9 @@ public class WalletService {
 	
 	@Autowired
 	private EmailService emailService;
+	
+	@Autowired
+	private StatementPdfService statementPdfService;
 
 	public String addMoney(AddMoneyRequest request) {
 
@@ -216,5 +219,35 @@ public class WalletService {
 	public Wallet getWalletDetails(Long userId) {
 
 		return walletRepository.findByUser_Id(userId).orElseThrow(() -> new RuntimeException("Wallet not found"));
+	}
+	
+	public byte[] downloadStatement(
+	        Long userId)
+	        throws Exception {
+
+	    User user =
+	            userRepository.findById(userId)
+	            .orElseThrow(() ->
+	                    new RuntimeException(
+	                            "User Not Found"));
+
+	    Wallet wallet =
+	            walletRepository
+	            .findByUser_Id(userId)
+	            .orElseThrow(() ->
+	                    new RuntimeException(
+	                            "Wallet Not Found"));
+
+	    List<Transaction> transactions =
+	            transactionRepository
+	            .findBySenderIdOrReceiverIdOrderByTransactionDateDesc(
+	                    userId,
+	                    userId);
+
+	    return statementPdfService
+	            .generateStatement(
+	                    user,
+	                    wallet,
+	                    transactions);
 	}
 }
