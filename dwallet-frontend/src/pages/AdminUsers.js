@@ -34,64 +34,39 @@ function AdminUsers() {
 
     async function blockUser(id) {
 
-        try {
+        await API.put(`/users/block/${id}`);
 
-            await API.put(`/users/block/${id}`);
-
-            alert("User Blocked Successfully");
-
-            loadUsers();
-
-        }
-
-        catch (error) {
-
-            console.log(error);
-
-        }
+        loadUsers();
 
     }
 
     async function activateUser(id) {
 
-        try {
+        await API.put(`/users/activate/${id}`);
 
-            await API.put(`/users/activate/${id}`);
-
-            alert("User Activated Successfully");
-
-            loadUsers();
-
-        }
-
-        catch (error) {
-
-            console.log(error);
-
-        }
+        loadUsers();
 
     }
 
-    const filteredUsers =
-        users.filter(user =>
+    const filteredUsers = users.filter(user =>
 
-            user.fullName
-                .toLowerCase()
-                .includes(search.toLowerCase())
+        user.fullName
+            .toLowerCase()
+            .includes(search.toLowerCase())
 
-            ||
+        ||
 
-            user.email
-                .toLowerCase()
-                .includes(search.toLowerCase())
+        user.email
+            .toLowerCase()
+            .includes(search.toLowerCase())
 
-            ||
+        ||
 
-            user.upiId
-                .toLowerCase()
-                .includes(search.toLowerCase())
+        user.upiId
+            .toLowerCase()
+            .includes(search.toLowerCase())
 
-        );
+    );
 
     return (
 
@@ -99,85 +74,141 @@ function AdminUsers() {
 
             <h1
                 style={{
-                    color: "#312e81",
-                    marginBottom: "30px"
+                    color:"#1e293b",
+                    marginBottom:"10px"
                 }}
             >
-                User Management
+                👥 User Management
             </h1>
 
-            <input
+            <p
+                style={{
+                    color:"#64748b",
+                    marginBottom:"30px"
+                }}
+            >
+                Manage WalletPay customers and administrators.
+            </p>
 
-                type="text"
+            {/* SUMMARY */}
+
+            <div
+                style={{
+
+                    background:"white",
+
+                    padding:"25px",
+
+                    borderRadius:"18px",
+
+                    boxShadow:"0 8px 25px rgba(0,0,0,.08)",
+
+                    marginBottom:"30px",
+
+                    display:"flex",
+
+                    justifyContent:"space-between",
+
+                    alignItems:"center"
+
+                }}
+            >
+
+                <div>
+
+                    <h3
+                        style={{
+                            margin:0,
+                            color:"#64748b"
+                        }}
+                    >
+                        Total Registered Users
+                    </h3>
+
+                    <h1
+                        style={{
+                            marginTop:"10px",
+                            color:"#4f46e5"
+                        }}
+                    >
+                        {users.length}
+                    </h1>
+
+                </div>
+
+            </div>
+
+            {/* SEARCH */}
+
+            <input
 
                 placeholder="Search Name, Email or UPI"
 
                 value={search}
 
-                onChange={(e) =>
-                    setSearch(e.target.value)
-                }
+                onChange={(e)=>setSearch(e.target.value)}
 
                 style={{
 
-                    width: "100%",
+                    width:"100%",
 
-                    padding: "15px",
+                    padding:"15px",
 
-                    borderRadius: "12px",
+                    borderRadius:"12px",
 
-                    border: "1px solid #ddd",
+                    border:"1px solid #ddd",
 
-                    marginBottom: "30px",
+                    marginBottom:"25px",
 
-                    fontSize: "16px"
+                    fontSize:"16px"
 
                 }}
 
             />
 
+            {/* TABLE */}
+
             <div
                 style={{
 
-                    background: "white",
+                    background:"white",
 
-                    borderRadius: "20px",
+                    borderRadius:"20px",
 
-                    overflow: "hidden",
+                    overflow:"hidden",
 
-                    boxShadow:
-                        "0 10px 25px rgba(0,0,0,.08)"
+                    boxShadow:"0 8px 25px rgba(0,0,0,.08)"
 
                 }}
             >
 
                 <table
                     style={{
-                        width: "100%",
-                        borderCollapse: "collapse"
+                        width:"100%",
+                        borderCollapse:"collapse"
                     }}
                 >
 
                     <thead
                         style={{
-                            background: "#4f46e5",
-                            color: "white"
+                            background:"#4f46e5",
+                            color:"white"
                         }}
                     >
 
                         <tr>
 
-                            <th style={thStyle}>Name</th>
+                            <th style={th}>User</th>
 
-                            <th style={thStyle}>Email</th>
+                            <th style={th}>Email</th>
 
-                            <th style={thStyle}>UPI ID</th>
+                            <th style={th}>UPI</th>
 
-                            <th style={thStyle}>Role</th>
+                            <th style={th}>Role</th>
 
-                            <th style={thStyle}>Status</th>
+                            <th style={th}>Status</th>
 
-                            <th style={thStyle}>Action</th>
+                            <th style={th}>Action</th>
 
                         </tr>
 
@@ -187,52 +218,148 @@ function AdminUsers() {
 
                         {
 
-                            filteredUsers.map(user => (
+                            filteredUsers.map(user=>(
 
                                 <tr key={user.id}>
 
-                                    <td style={tdStyle}>
-                                        {user.fullName}
+                                    {/* USER */}
+
+                                    <td style={td}>
+
+                                        <div
+                                            style={{
+
+                                                display:"flex",
+
+                                                alignItems:"center",
+
+                                                gap:"15px"
+
+                                            }}
+                                        >
+
+                                            <div
+                                                style={{
+
+                                                    width:"45px",
+
+                                                    height:"45px",
+
+                                                    borderRadius:"50%",
+
+                                                    background:"#4f46e5",
+
+                                                    color:"white",
+
+                                                    display:"flex",
+
+                                                    justifyContent:"center",
+
+                                                    alignItems:"center",
+
+                                                    fontWeight:"bold",
+
+                                                    fontSize:"20px"
+
+                                                }}
+                                            >
+
+                                                {user.fullName.charAt(0)}
+
+                                            </div>
+
+                                            <div>
+
+                                                <b>{user.fullName}</b>
+
+                                            </div>
+
+                                        </div>
+
                                     </td>
 
-                                    <td style={tdStyle}>
-                                        {user.email}
-                                    </td>
+                                    <td style={td}>{user.email}</td>
 
-                                    <td style={tdStyle}>
-                                        {user.upiId}
-                                    </td>
+                                    <td style={td}>{user.upiId}</td>
 
-                                    <td style={tdStyle}>
-                                        {user.role}
-                                    </td>
-
-                                    <td style={tdStyle}>
+                                    <td style={td}>
 
                                         <span
                                             style={{
 
                                                 background:
 
-                                                    user.status === "ACTIVE"
+                                                user.role==="ADMIN"
 
-                                                        ? "#dcfce7"
+                                                ?
 
-                                                        : "#fee2e2",
+                                                "#dbeafe"
+
+                                                :
+
+                                                "#ede9fe",
 
                                                 color:
 
-                                                    user.status === "ACTIVE"
+                                                user.role==="ADMIN"
 
-                                                        ? "#15803d"
+                                                ?
 
-                                                        : "#dc2626",
+                                                "#2563eb"
 
-                                                padding: "8px 15px",
+                                                :
 
-                                                borderRadius: "30px",
+                                                "#4f46e5",
 
-                                                fontWeight: "bold"
+                                                padding:"8px 14px",
+
+                                                borderRadius:"30px",
+
+                                                fontWeight:"bold"
+
+                                            }}
+                                        >
+
+                                            {user.role}
+
+                                        </span>
+
+                                    </td>
+
+                                    <td style={td}>
+
+                                        <span
+                                            style={{
+
+                                                background:
+
+                                                user.status==="ACTIVE"
+
+                                                ?
+
+                                                "#dcfce7"
+
+                                                :
+
+                                                "#fee2e2",
+
+                                                color:
+
+                                                user.status==="ACTIVE"
+
+                                                ?
+
+                                                "#16a34a"
+
+                                                :
+
+                                                "#dc2626",
+
+                                                padding:"8px 14px",
+
+                                                borderRadius:"30px",
+
+                                                fontWeight:"bold"
 
                                             }}
                                         >
@@ -243,86 +370,94 @@ function AdminUsers() {
 
                                     </td>
 
-                                    <td style={tdStyle}>
+                                    <td style={td}>
 
                                         {
 
-                                            user.role === "ADMIN"
+                                            user.role==="ADMIN"
 
-                                                ?
+                                            ?
 
-                                                <span
-                                                    style={{
-                                                        color: "#64748b",
-                                                        fontWeight: "bold"
-                                                    }}
-                                                >
-                                                    Protected
-                                                </span>
+                                            <button
+                                                disabled
+                                                style={{
 
-                                                :
+                                                    background:"#94a3b8",
 
-                                                user.status === "ACTIVE"
+                                                    color:"white",
 
-                                                    ?
+                                                    border:"none",
 
-                                                    <button
+                                                    padding:"10px 16px",
 
-                                                        onClick={() =>
-                                                            blockUser(user.id)
-                                                        }
+                                                    borderRadius:"10px"
 
-                                                        style={{
+                                                }}
+                                            >
 
-                                                            background: "#dc2626",
+                                                Protected
 
-                                                            color: "white",
+                                            </button>
 
-                                                            border: "none",
+                                            :
 
-                                                            padding: "10px 18px",
+                                            user.status==="ACTIVE"
 
-                                                            borderRadius: "10px",
+                                            ?
 
-                                                            cursor: "pointer"
+                                            <button
 
-                                                        }}
+                                                onClick={()=>blockUser(user.id)}
 
-                                                    >
+                                                style={{
 
-                                                        Block
+                                                    background:"#ef4444",
 
-                                                    </button>
+                                                    color:"white",
 
-                                                    :
+                                                    border:"none",
 
-                                                    <button
+                                                    padding:"10px 18px",
 
-                                                        onClick={() =>
-                                                            activateUser(user.id)
-                                                        }
+                                                    borderRadius:"10px",
 
-                                                        style={{
+                                                    cursor:"pointer"
 
-                                                            background: "#16a34a",
+                                                }}
 
-                                                            color: "white",
+                                            >
 
-                                                            border: "none",
+                                                Block
 
-                                                            padding: "10px 18px",
+                                            </button>
 
-                                                            borderRadius: "10px",
+                                            :
 
-                                                            cursor: "pointer"
+                                            <button
 
-                                                        }}
+                                                onClick={()=>activateUser(user.id)}
 
-                                                    >
+                                                style={{
 
-                                                        Activate
+                                                    background:"#16a34a",
 
-                                                    </button>
+                                                    color:"white",
+
+                                                    border:"none",
+
+                                                    padding:"10px 18px",
+
+                                                    borderRadius:"10px",
+
+                                                    cursor:"pointer"
+
+                                                }}
+
+                                            >
+
+                                                Activate
+
+                                            </button>
 
                                         }
 
@@ -346,19 +481,19 @@ function AdminUsers() {
 
 }
 
-const thStyle = {
+const th={
 
-    padding: "18px",
+    padding:"18px",
 
-    textAlign: "left"
+    textAlign:"left"
 
 };
 
-const tdStyle = {
+const td={
 
-    padding: "18px",
+    padding:"18px",
 
-    borderBottom: "1px solid #eee"
+    borderBottom:"1px solid #eee"
 
 };
 

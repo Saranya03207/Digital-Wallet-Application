@@ -10,6 +10,8 @@ import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.wallet.digitalwallet.dto.AIDashboardResponse;
+import com.wallet.digitalwallet.dto.AdminAnalyticsResponse;
 import com.wallet.digitalwallet.dto.AdminDashboardResponse;
 import com.wallet.digitalwallet.entity.Status;
 import com.wallet.digitalwallet.entity.Transaction;
@@ -18,7 +20,8 @@ import com.wallet.digitalwallet.entity.Wallet;
 import com.wallet.digitalwallet.repository.TransactionRepository;
 import com.wallet.digitalwallet.repository.UserRepository;
 import com.wallet.digitalwallet.repository.WalletRepository;
-
+import java.util.stream.Collectors;
+import com.wallet.digitalwallet.dto.TransactionResponseDTO;
 
 @Service
 public class AdminService {
@@ -67,12 +70,7 @@ public class AdminService {
         return response;
     }
     
-    public List<Transaction> getAllTransactions(){
-
-        return transactionRepository
-                .findAll();
-    }
-    
+   
     public Map<String, Long> getTransactionTypeAnalytics() {
 
         Map<String, Long> map =
@@ -127,4 +125,167 @@ public class AdminService {
         return map;
 
     }
+    
+    public List<TransactionResponseDTO> getAllTransactions() {
+
+        List<Transaction> transactions =
+                transactionRepository.findAllByOrderByTransactionDateDesc();
+
+        return transactions.stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+
+    }
+    
+    private TransactionResponseDTO convertToDTO(Transaction transaction) {
+
+        TransactionResponseDTO dto =
+                new TransactionResponseDTO();
+
+        dto.setTransactionId(
+                transaction.getTransactionId());
+
+        dto.setUpiTransactionId(
+                transaction.getUpiTransactionId());
+
+        dto.setSenderName(
+                transaction.getSender().getFullName());
+
+        dto.setReceiverName(
+                transaction.getReceiver().getFullName());
+
+        dto.setAmount(
+                transaction.getAmount());
+
+        dto.setTransactionType(
+                transaction.getTransactionType().name());
+
+        dto.setTransactionStatus(
+                transaction.getTransactionStatus().name());
+
+        dto.setTransactionDate(
+                transaction.getTransactionDate());
+
+        dto.setAiPrediction(
+                transaction.getAiPrediction());
+
+        dto.setAiScore(
+                transaction.getAiScore());
+
+        dto.setAiReason(
+                transaction.getAiReason());
+
+        return dto;
+    }
+    
+    public AdminAnalyticsResponse getAnalytics(){
+
+        AdminAnalyticsResponse response =
+                new AdminAnalyticsResponse();
+
+        response.setTransactionTypes(
+                getTransactionTypeAnalytics());
+
+        response.setDailyTransactions(
+                getDailyTransactions());
+
+        response.setTotalTransactions(
+                transactionRepository.count());
+
+        BigDecimal volume = BigDecimal.ZERO;
+
+        for(Transaction t : transactionRepository.findAll()){
+
+            volume =
+                    volume.add(t.getAmount());
+
+        }
+
+        response.setTotalVolume(volume);
+
+        if(transactionRepository.count()>0){
+
+            response.setAverageAmount(
+
+                    volume.divide(
+
+                            BigDecimal.valueOf(
+                                    transactionRepository.count()),
+                            2,
+                            BigDecimal.ROUND_HALF_UP)
+
+            );
+
+        }
+
+        return response;
+
+    }
+    
+    public AIDashboardResponse getAIDashboard() {
+
+        AIDashboardResponse response = new AIDashboardResponse();
+
+        List<Transaction> transactions = transactionRepository.findAll();
+
+        response.setTotalTransactions(transactions.size());
+
+        long analysed = transactions.stream()
+                .filter(t -> t.getAiPrediction() != null)
+                .count();
+
+        response.setAnalysedTransactions(analysed);
+
+        long normal = transactions.stream()
+                .filter(t -> "Normal".equalsIgnoreCase(t.getAiPrediction()))
+                .count();
+
+        response.setNormalTransactions(normal);
+
+        long suspicious = transactions.stream()
+                .filter(t -> "Suspicious".equalsIgnoreCase(t.getAiPrediction()))
+                .count();
+
+        response.setSuspiciousTransactions(suspicious);
+
+        long fraud = transactions.stream()
+                .filter(t -> "Fraud".equalsIgnoreCase(t.getAiPrediction()))
+                .count();
+
+        response.setFraudTransactions(fraud);
+
+        double avgScore = transactions.stream()
+                .filter(t -> t.getAiScore() != null)
+                .mapToDouble(Transaction::getAiScore)
+                .average()
+                .orElse(0);
+
+        response.setAverageScore(avgScore);
+
+        return response;
+    }
+    
+    public List<TransactionResponseDTO> getHighRiskTransactions() {
+
+        return transactionRepository
+                .findAll()
+                .stream()
+
+                .filter(t ->
+
+                        "Suspicious".equalsIgnoreCase(t.getAiPrediction())
+
+                        ||
+
+                        "Fraud".equalsIgnoreCase(t.getAiPrediction())
+
+                )
+
+                .map(this::convertToDTO)
+
+                .toList();
+
+    }
+    
+    
 }

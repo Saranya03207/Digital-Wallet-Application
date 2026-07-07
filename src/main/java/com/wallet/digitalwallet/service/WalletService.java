@@ -22,6 +22,9 @@ import com.wallet.digitalwallet.entity.Notification;
 import com.wallet.digitalwallet.repository.NotificationRepository;
 import com.wallet.digitalwallet.service.EmailService;
 import com.wallet.digitalwallet.dto.TransferMoneyRequest;
+import com.wallet.digitalwallet.ai.AIRequest;
+import com.wallet.digitalwallet.ai.AIPrediction;
+import com.wallet.digitalwallet.ai.AIService;
 
 @Service
 public class WalletService {
@@ -43,6 +46,9 @@ public class WalletService {
 	
 	@Autowired
 	private StatementPdfService statementPdfService;
+	
+	@Autowired
+	private AIService aiService;
 
 	public String addMoney(AddMoneyRequest request) {
 
@@ -136,7 +142,27 @@ public class WalletService {
 
 		walletRepository.save(senderWallet);
 		walletRepository.save(receiverWallet);
+		
+		AIRequest aiRequest = new AIRequest();
 
+		aiRequest.setAmount(request.getAmount().doubleValue());
+
+		aiRequest.setHour(LocalDateTime.now().getHour());
+
+		aiRequest.setDay(LocalDateTime.now().getDayOfWeek().getValue());
+
+		aiRequest.setSenderBalance(senderWallet.getBalance().doubleValue());
+
+		aiRequest.setReceiverBalance(receiverWallet.getBalance().doubleValue());
+
+		aiRequest.setDistance(5);
+
+		aiRequest.setDeviceChanged(0);
+
+		aiRequest.setTransactionsLastHour(1);
+		
+		AIPrediction prediction = aiService.predict(aiRequest);
+		
 		// Transaction History
 		Transaction transaction = new Transaction();
 
@@ -151,6 +177,12 @@ public class WalletService {
 		transaction.setTransactionStatus(TransactionStatus.SUCCESS);
 		transaction.setRemarks("UPI Transfer");
 		transaction.setTransactionDate(LocalDateTime.now());
+		
+		transaction.setAiPrediction(prediction.getPrediction());
+
+		transaction.setAiScore(prediction.getScore());
+
+		transaction.setAiReason(prediction.getReason());
 
 		transactionRepository.save(transaction);
 		// Receiver Notification

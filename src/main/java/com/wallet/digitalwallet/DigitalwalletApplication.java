@@ -10,5 +10,7 @@ public class DigitalwalletApplication {
 	SpringApplication.run(DigitalwalletApplication.class, args);
 		System.out.println("Started Spring boot application");
 	}
+	
+	
 
 }

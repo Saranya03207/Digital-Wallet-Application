@@ -19,6 +19,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import AdminUsers from "./pages/AdminUsers";
 import AdminTransactions from "./pages/AdminTransactions";
 import AdminAnalytics from "./pages/AdminAnalytics";
+import FraudMonitor from "./pages/FraudMonitor";
 
 function App() {
   return (
@@ -60,6 +61,8 @@ function App() {
         <Route path="/admin/users" element={<AdminUsers />} />
 
         <Route path="/admin/analytics"element={<AdminAnalytics/>}/>
+
+        <Route path="/admin/fraud"element={<FraudMonitor />}/>
       </Routes>
     </BrowserRouter>
   );

@@ -8,9 +8,11 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.wallet.digitalwallet.dto.AIDashboardResponse;
+import com.wallet.digitalwallet.dto.AdminAnalyticsResponse;
 import com.wallet.digitalwallet.dto.AdminDashboardResponse;
+import com.wallet.digitalwallet.dto.TransactionResponseDTO;
 import com.wallet.digitalwallet.entity.Transaction;
-import com.wallet.digitalwallet.repository.TransactionRepository;
 import com.wallet.digitalwallet.service.AdminService;
 
 @RestController
@@ -19,6 +21,8 @@ public class AdminController {
 
     @Autowired
     private AdminService adminService;
+    
+    
 
     @GetMapping("/dashboard")
     public AdminDashboardResponse getDashboard() {
@@ -26,11 +30,9 @@ public class AdminController {
         return adminService.getDashboard();
     }
     
-    @GetMapping("/all-transactions")
-    public List<Transaction> allTransactions(){
-
+    @GetMapping("/transactions")
+    public List<TransactionResponseDTO> getTransactions() {
         return adminService.getAllTransactions();
-
     }
     
     @GetMapping("/analytics/type")
@@ -44,6 +46,27 @@ public class AdminController {
     public Map<String, Long> dailyAnalytics() {
 
         return adminService.getDailyTransactions();
+
+    }
+    
+    @GetMapping("/analytics")
+    public AdminAnalyticsResponse analytics(){
+
+        return adminService.getAnalytics();
+
+    }
+    
+    @GetMapping("/ai-dashboard")
+    public AIDashboardResponse getAIDashboard() {
+
+        return adminService.getAIDashboard();
+
+    }
+    
+    @GetMapping("/high-risk-transactions")
+    public List<TransactionResponseDTO> getHighRiskTransactions() {
+
+        return adminService.getHighRiskTransactions();
 
     }
 }

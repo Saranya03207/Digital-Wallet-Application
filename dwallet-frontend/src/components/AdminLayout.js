@@ -1,6 +1,18 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 function AdminLayout({ children }) {
+
+    const location = useLocation();
+
+    const navigate = useNavigate();
+
+    function logout() {
+
+        localStorage.clear();
+
+        navigate("/login");
+
+    }
 
     return (
 
@@ -8,60 +20,137 @@ function AdminLayout({ children }) {
             style={{
                 display: "flex",
                 minHeight: "100vh",
-                background: "#f5f7fb"
+                background: "#f8fafc"
             }}
         >
 
-            {/* Sidebar */}
+            {/* SIDEBAR */}
 
             <div
                 style={{
-                    width: "250px",
-                    background: "#312e81",
+                    width: "270px",
+                    background: "linear-gradient(180deg,#312e81,#4338ca)",
                     color: "white",
-                    padding: "30px"
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "space-between",
+                    padding: "30px 20px",
+                    boxShadow: "4px 0 15px rgba(0,0,0,.08)"
                 }}
             >
 
-                <h2
+                <div>
+
+                    <h2
+                        style={{
+                            textAlign: "center",
+                            marginBottom: "45px",
+                            letterSpacing: "1px"
+                        }}
+                    >
+                        💳 WalletPay
+                    </h2>
+
+                    <MenuItem
+                        icon="🏠"
+                        title="Dashboard"
+                        to="/admin"
+                        active={
+                            location.pathname === "/admin"
+                        }
+                    />
+
+                    <MenuItem
+                        icon="👥"
+                        title="Users"
+                        to="/admin/users"
+                        active={
+                            location.pathname === "/admin/users"
+                        }
+                    />
+
+                    <MenuItem
+                        icon="💳"
+                        title="Transactions"
+                        to="/admin/transactions"
+                        active={
+                            location.pathname === "/admin/transactions"
+                        }
+                    />
+
+                    <MenuItem
+                        icon="📊"
+                        title="Analytics"
+                        to="/admin/analytics"
+                        active={
+                            location.pathname === "/admin/analytics"
+                        }
+                    />
+
+                    <MenuItem
+                        icon="🤖"
+                        title="AI Monitor"
+                        to="/admin/fraud"
+                        active={
+                            location.pathname === "/admin/fraud"
+                        }
+                    />
+
+                    <MenuItem
+                        icon="⚙"
+                        title="Settings"
+                        to="/admin/settings"
+                        active={
+                            location.pathname === "/admin/settings"
+                        }
+                    />
+
+                </div>
+
+                <button
+
+                    onClick={logout}
+
                     style={{
-                        marginBottom: "40px"
+
+                        background: "#ef4444",
+
+                        color: "white",
+
+                        border: "none",
+
+                        padding: "14px",
+
+                        borderRadius: "12px",
+
+                        cursor: "pointer",
+
+                        fontWeight: "bold",
+
+                        fontSize: "15px"
+
                     }}
+
                 >
-                    WalletPay
-                </h2>
 
-                <MenuItem
-                    to="/admin"
-                    title="Dashboard"
-                />
+                    🚪 Logout
 
-                <MenuItem
-                    to="/admin/users"
-                    title="Users"
-                />
-
-                <MenuItem
-                    to="/admin/transactions"
-                    title="Transactions"
-                />
-
-                <MenuItem
-                    to="/admin/analytics"
-                    title="Analytics"
-                />
+                </button>
 
             </div>
 
-            {/* Main */}
+            {/* MAIN */}
 
             <div
                 style={{
                     flex: 1,
-                    padding: "40px"
+                    padding: "35px",
+                    overflowY: "auto"
                 }}
             >
+
                 {children}
+
             </div>
 
         </div>
@@ -70,31 +159,74 @@ function AdminLayout({ children }) {
 
 }
 
-function MenuItem({ to, title }) {
+function MenuItem({
+
+    icon,
+
+    title,
+
+    to,
+
+    active
+
+}) {
 
     return (
 
-        <div
+        <Link
+
+            to={to}
+
             style={{
-                marginBottom: "20px"
+
+                display: "flex",
+
+                alignItems: "center",
+
+                gap: "15px",
+
+                textDecoration: "none",
+
+                color: "white",
+
+                padding: "15px",
+
+                borderRadius: "14px",
+
+                marginBottom: "12px",
+
+                background:
+
+                    active
+
+                        ? "rgba(255,255,255,.15)"
+
+                        : "transparent",
+
+                transition: ".3s"
+
             }}
+
         >
 
-            <Link
-
-                to={to}
-
+            <span
                 style={{
-                    color: "white",
-                    textDecoration: "none",
-                    fontSize: "18px"
+                    fontSize: "22px"
                 }}
+            >
+                {icon}
+            </span>
 
+            <span
+                style={{
+                    fontSize: "16px",
+                    fontWeight: "600"
+                }}
             >
                 {title}
-            </Link>
+            </span>
 
-        </div>
+        </Link>
 
     );
 

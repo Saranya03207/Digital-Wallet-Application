@@ -37,7 +37,44 @@ public class Transaction {
     @Column(name = "transaction_date")
     private LocalDateTime transactionDate;
     
-    private String upiTransactionId;
+    public String getAiReason() {
+		return aiReason;
+	}
+
+	public void setAiReason(String aiReason) {
+		this.aiReason = aiReason;
+	}
+
+	private String upiTransactionId;
+    
+ // AI Fraud Detection
+
+    @Column(name = "ai_prediction")
+    private String aiPrediction;
+
+    public String getAiPrediction() {
+		return aiPrediction;
+	}
+
+	public void setAiPrediction(String aiPrediction) {
+		this.aiPrediction = aiPrediction;
+	}
+
+	public Double getAiScore() {
+		return aiScore;
+	}
+
+	public void setAiScore(Double aiScore) {
+		this.aiScore = aiScore;
+	}
+
+	@Column(name = "ai_score")
+    private Double aiScore;
+
+    @Column(length = 500)
+    private String aiReason;
+    
+    
 
     public String getUpiTransactionId() {
 		return upiTransactionId;
@@ -113,4 +150,5 @@ public class Transaction {
     public void setTransactionDate(LocalDateTime transactionDate) {
         this.transactionDate = transactionDate;
     }
+   
 }

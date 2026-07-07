@@ -10,13 +10,22 @@ import com.wallet.digitalwallet.entity.TransactionType;
 public interface TransactionRepository
         extends JpaRepository<Transaction, Long> {
 
-	List<Transaction>
-	findBySenderIdOrReceiverIdOrderByTransactionDateDesc(
-	        Long senderId,
-	        Long receiverId);
-	
+    List<Transaction>
+    findBySenderIdOrReceiverIdOrderByTransactionDateDesc(
+            Long senderId,
+            Long receiverId);
+
     long countByTransactionType(
             TransactionType transactionType);
-    
+
     long count();
+
+    List<Transaction>
+    findAllByOrderByTransactionDateDesc();
+    
+    long countByAiPrediction(String aiPrediction);
+
+    long countByAiPredictionIsNotNull();
+
+    List<Transaction> findByAiPredictionOrderByTransactionDateDesc(String prediction);
 }
