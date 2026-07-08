@@ -3,16 +3,24 @@ package com.wallet.digitalwallet.ai;
 public class AIRequest {
 
     private double amount;
+
     private int hour;
+
     private int day;
+
     private double senderBalance;
+
     private double receiverBalance;
-    private double distance;
-    private int deviceChanged;
+
+    private double averageAmount;
+
+    private int todayTransactions;
+
     private int transactionsLastHour;
 
-    public AIRequest() {
-    }
+    private int newReceiver;
+
+    private int nightTransaction;
 
     public double getAmount() {
         return amount;
@@ -54,20 +62,20 @@ public class AIRequest {
         this.receiverBalance = receiverBalance;
     }
 
-    public double getDistance() {
-        return distance;
+    public double getAverageAmount() {
+        return averageAmount;
     }
 
-    public void setDistance(double distance) {
-        this.distance = distance;
+    public void setAverageAmount(double averageAmount) {
+        this.averageAmount = averageAmount;
     }
 
-    public int getDeviceChanged() {
-        return deviceChanged;
+    public int getTodayTransactions() {
+        return todayTransactions;
     }
 
-    public void setDeviceChanged(int deviceChanged) {
-        this.deviceChanged = deviceChanged;
+    public void setTodayTransactions(int todayTransactions) {
+        this.todayTransactions = todayTransactions;
     }
 
     public int getTransactionsLastHour() {
@@ -76,6 +84,22 @@ public class AIRequest {
 
     public void setTransactionsLastHour(int transactionsLastHour) {
         this.transactionsLastHour = transactionsLastHour;
+    }
+
+    public int getNewReceiver() {
+        return newReceiver;
+    }
+
+    public void setNewReceiver(int newReceiver) {
+        this.newReceiver = newReceiver;
+    }
+
+    public int getNightTransaction() {
+        return nightTransaction;
+    }
+
+    public void setNightTransaction(int nightTransaction) {
+        this.nightTransaction = nightTransaction;
     }
 
 }

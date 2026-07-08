@@ -45,6 +45,28 @@ function FraudMonitor() {
 
     }
 
+    async function investigate(id){
+
+    try{
+
+        await API.post(
+
+            `/admin/investigate/${id}`
+
+        );
+
+        loadData();
+
+    }
+
+    catch(error){
+
+        console.log(error);
+
+    }
+
+}
+
     return (
 
         <AdminLayout>
@@ -176,6 +198,8 @@ function FraudMonitor() {
                                 <th style={th}>Confidence</th>
 
                                 <th style={th}>Reason</th>
+
+                                <th style={th}>Action</th>
 
                             </tr>
 
@@ -355,6 +379,59 @@ function FraudMonitor() {
         {tx.aiReason}
 
     </div>
+
+</td>
+
+<td style={td}>
+
+    {
+
+        tx.remarks === "Under Investigation"
+
+        ?
+
+        <span
+    style={{
+        background: "#dbeafe",
+        color: "#1d4ed8",
+        padding: "8px 15px",
+        borderRadius: "20px",
+        fontWeight: "bold"
+    }}
+>
+    🔍 Under Investigation
+</span>
+        :
+
+        <button
+
+            onClick={() => investigate(tx.transactionId)}
+
+            style={{
+
+                background:"#2563eb",
+
+                color:"white",
+
+                border:"none",
+
+                padding:"10px 18px",
+
+                borderRadius:"10px",
+
+                cursor:"pointer",
+
+                fontWeight:"bold"
+
+            }}
+
+        >
+
+            🔍 Investigate
+
+        </button>
+
+    }
 
 </td>
                                             </tr>

@@ -26,6 +26,16 @@ public class TransactionResponseDTO {
     private Double aiScore;
 
     private String aiReason;
+    
+    private String remarks;
+
+    public String getRemarks() {
+        return remarks;
+    }
+
+    public void setRemarks(String remarks) {
+        this.remarks = remarks;
+    }
 
     public Long getTransactionId() {
         return transactionId;

@@ -20,6 +20,9 @@ import com.wallet.digitalwallet.entity.Wallet;
 import com.wallet.digitalwallet.repository.TransactionRepository;
 import com.wallet.digitalwallet.repository.UserRepository;
 import com.wallet.digitalwallet.repository.WalletRepository;
+
+import org.springframework.transaction.annotation.Transactional;
+
 import java.util.stream.Collectors;
 import com.wallet.digitalwallet.dto.TransactionResponseDTO;
 
@@ -174,6 +177,9 @@ public class AdminService {
 
         dto.setAiReason(
                 transaction.getAiReason());
+        
+        dto.setRemarks(
+                transaction.getRemarks());
 
         return dto;
     }
@@ -287,5 +293,22 @@ public class AdminService {
 
     }
     
+    @Transactional
+    public String investigateTransaction(Long transactionId) {
+
+        Transaction transaction =
+                transactionRepository
+                        .findById(transactionId)
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "Transaction Not Found"));
+
+        transaction.setRemarks("Under Investigation");
+
+        transactionRepository.save(transaction);
+
+        return "Transaction marked as Under Investigation";
+
+    }
     
 }

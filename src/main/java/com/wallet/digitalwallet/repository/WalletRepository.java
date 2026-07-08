@@ -17,4 +17,6 @@ public interface WalletRepository extends JpaRepository<Wallet, Long> {
 	BigDecimal getTotalWalletBalance();
 	
 	List<Wallet> findAll();
+	
+	
 }

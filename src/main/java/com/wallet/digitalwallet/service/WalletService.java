@@ -6,280 +6,340 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.wallet.digitalwallet.ai.AIPrediction;
+import com.wallet.digitalwallet.ai.AIRequest;
+import com.wallet.digitalwallet.ai.AIService;
 import com.wallet.digitalwallet.dto.AddMoneyRequest;
+import com.wallet.digitalwallet.dto.TransferMoneyRequest;
+import com.wallet.digitalwallet.entity.Notification;
 import com.wallet.digitalwallet.entity.Status;
 import com.wallet.digitalwallet.entity.Transaction;
 import com.wallet.digitalwallet.entity.TransactionStatus;
 import com.wallet.digitalwallet.entity.TransactionType;
 import com.wallet.digitalwallet.entity.User;
 import com.wallet.digitalwallet.entity.Wallet;
+import com.wallet.digitalwallet.entity.WalletStatus;
+import com.wallet.digitalwallet.repository.NotificationRepository;
 import com.wallet.digitalwallet.repository.TransactionRepository;
 import com.wallet.digitalwallet.repository.UserRepository;
 import com.wallet.digitalwallet.repository.WalletRepository;
-import org.springframework.transaction.annotation.Transactional;
-import com.wallet.digitalwallet.entity.WalletStatus;
-import com.wallet.digitalwallet.entity.Notification;
-import com.wallet.digitalwallet.repository.NotificationRepository;
-import com.wallet.digitalwallet.service.EmailService;
-import com.wallet.digitalwallet.dto.TransferMoneyRequest;
-import com.wallet.digitalwallet.ai.AIRequest;
-import com.wallet.digitalwallet.ai.AIPrediction;
-import com.wallet.digitalwallet.ai.AIService;
 
 @Service
 public class WalletService {
 
-	@Autowired
-	private WalletRepository walletRepository;
+    @Autowired
+    private WalletRepository walletRepository;
 
-	@Autowired
-	private UserRepository userRepository;
+    @Autowired
+    private UserRepository userRepository;
 
-	@Autowired
-	private TransactionRepository transactionRepository;
+    @Autowired
+    private TransactionRepository transactionRepository;
 
-	@Autowired
-	private NotificationRepository notificationRepository;
-	
-	@Autowired
-	private EmailService emailService;
-	
-	@Autowired
-	private StatementPdfService statementPdfService;
-	
-	@Autowired
-	private AIService aiService;
+    @Autowired
+    private NotificationRepository notificationRepository;
 
-	public String addMoney(AddMoneyRequest request) {
+    @Autowired
+    private EmailService emailService;
 
-	    if(request.getAmount()
-	            .compareTo(BigDecimal.ZERO) <= 0){
+    @Autowired
+    private StatementPdfService statementPdfService;
 
-	        return "Amount must be greater than zero";
-	    }
+    @Autowired
+    private AIService aiService;
 
-	    Wallet wallet = walletRepository
-	            .findByUser_Id(request.getUserId())
-	            .orElseThrow(() ->
-	                    new RuntimeException(
-	                            "Wallet not found"));
+    @Autowired
+    private AutoInvestigationService autoInvestigationService;
 
-	    wallet.setBalance(
-	            wallet.getBalance()
-	                    .add(request.getAmount()));
+    @Autowired
+    private FeatureExtractionService featureExtractionService;
 
-	    walletRepository.save(wallet);
+    public String addMoney(AddMoneyRequest request) {
 
-	    return "₹"
-	            + request.getAmount()
-	            + " Added Successfully";
-	}
-	
-	
-	@Transactional
-	public String transferMoney(TransferMoneyRequest request) {
+        if (request.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
+            return "Amount must be greater than zero";
+        }
 
-		// Prevent self transfer
-		if (request.getSenderUserId().equals(request.getReceiverUserId())) {
+        Wallet wallet = walletRepository
+                .findByUser_Id(request.getUserId())
+                .orElseThrow(() ->
+                        new RuntimeException("Wallet not found"));
 
-			return "Cannot transfer money to yourself";
-		}
+        wallet.setBalance(
+                wallet.getBalance().add(request.getAmount()));
 
-		// Prevent zero or negative amount
-		if (request.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
+        walletRepository.save(wallet);
 
-			return "Amount must be greater than zero";
-		}
+        return "₹" + request.getAmount() + " Added Successfully";
+    }
 
-		Wallet senderWallet = walletRepository.findByUser_Id(request.getSenderUserId())
-				.orElseThrow(() -> new RuntimeException("Sender wallet not found"));
+    @Transactional
+    public String transferMoney(TransferMoneyRequest request) {
 
-		Wallet receiverWallet = walletRepository.findByUser_Id(request.getReceiverUserId())
-				.orElseThrow(() -> new RuntimeException("Receiver wallet not found"));
+        if (request.getSenderUserId().equals(request.getReceiverUserId())) {
+            return "Cannot transfer money to yourself";
+        }
 
-		User sender = userRepository.findById(request.getSenderUserId())
-				.orElseThrow(() -> new RuntimeException("Sender not found"));
+        if (request.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
+            return "Amount must be greater than zero";
+        }
 
-		User receiver = userRepository.findById(request.getReceiverUserId())
-				.orElseThrow(() -> new RuntimeException("Receiver not found"));
+        Wallet senderWallet = walletRepository
+                .findByUser_Id(request.getSenderUserId())
+                .orElseThrow(() ->
+                        new RuntimeException("Sender wallet not found"));
 
-		// Sender status
-		if (sender.getStatus() == Status.BLOCKED) {
-			return "Sender Account Blocked";
-		}
+        Wallet receiverWallet = walletRepository
+                .findByUser_Id(request.getReceiverUserId())
+                .orElseThrow(() ->
+                        new RuntimeException("Receiver wallet not found"));
 
-		// Receiver status
-		if (receiver.getStatus() == Status.BLOCKED) {
-			return "Receiver Account Blocked";
-		}
+        User sender = userRepository
+                .findById(request.getSenderUserId())
+                .orElseThrow(() ->
+                        new RuntimeException("Sender not found"));
 
-		// Receiver wallet status
-		if (receiverWallet.getWalletStatus() != WalletStatus.ACTIVE) {
+        User receiver = userRepository
+                .findById(request.getReceiverUserId())
+                .orElseThrow(() ->
+                        new RuntimeException("Receiver not found"));
 
-			return "Receiver Wallet Inactive";
-		}
+        if (sender.getStatus() == Status.BLOCKED) {
+            return "Sender Account Blocked";
+        }
 
-		// Balance validation
-		if (senderWallet.getBalance().compareTo(request.getAmount()) < 0) {
+        if (receiver.getStatus() == Status.BLOCKED) {
+            return "Receiver Account Blocked";
+        }
 
-			return "Insufficient Balance";
-		}
-		if(sender.getTransactionPin() == null){
+        if (receiverWallet.getWalletStatus() != WalletStatus.ACTIVE) {
+            return "Receiver Wallet Inactive";
+        }
 
-		    return "Please Set Transaction PIN";
-		}
-		if(!sender.getTransactionPin()
-		        .equals(request.getTransactionPin())){
+        if (senderWallet.getBalance().compareTo(request.getAmount()) < 0) {
+            return "Insufficient Balance";
+        }
 
-		    return "Invalid Transaction PIN";
-		}
+        if (sender.getTransactionPin() == null) {
+            return "Please Set Transaction PIN";
+        }
 
-		// Debit sender
-		senderWallet.setBalance(senderWallet.getBalance().subtract(request.getAmount()));
+        if (!sender.getTransactionPin().equals(request.getTransactionPin())) {
+            return "Invalid Transaction PIN";
+        }
 
-		// Credit receiver
-		receiverWallet.setBalance(receiverWallet.getBalance().add(request.getAmount()));
+        // Debit Sender
+        senderWallet.setBalance(
+                senderWallet.getBalance().subtract(request.getAmount()));
 
-		walletRepository.save(senderWallet);
-		walletRepository.save(receiverWallet);
-		
-		AIRequest aiRequest = new AIRequest();
+        // Credit Receiver
+        receiverWallet.setBalance(
+                receiverWallet.getBalance().add(request.getAmount()));
 
-		aiRequest.setAmount(request.getAmount().doubleValue());
+        walletRepository.save(senderWallet);
+        walletRepository.save(receiverWallet);
 
-		aiRequest.setHour(LocalDateTime.now().getHour());
+        // Create Transaction BEFORE AI
 
-		aiRequest.setDay(LocalDateTime.now().getDayOfWeek().getValue());
+        Transaction transaction = new Transaction();
 
-		aiRequest.setSenderBalance(senderWallet.getBalance().doubleValue());
+        transaction.setUpiTransactionId(
+                "WP" + System.currentTimeMillis());
 
-		aiRequest.setReceiverBalance(receiverWallet.getBalance().doubleValue());
+        transaction.setSender(sender);
 
-		aiRequest.setDistance(5);
+        transaction.setReceiver(receiver);
 
-		aiRequest.setDeviceChanged(0);
+        transaction.setAmount(request.getAmount());
 
-		aiRequest.setTransactionsLastHour(1);
-		
-		AIPrediction prediction = aiService.predict(aiRequest);
-		
-		// Transaction History
-		Transaction transaction = new Transaction();
+        transaction.setTransactionType(
+                TransactionType.TRANSFER);
 
-		String upiTxnId = "WP" + System.currentTimeMillis();
+        transaction.setTransactionStatus(
+                TransactionStatus.SUCCESS);
 
-		transaction.setUpiTransactionId(upiTxnId);
+        transaction.setRemarks("UPI Transfer");
 
-		transaction.setSender(sender);
-		transaction.setReceiver(receiver);
-		transaction.setAmount(request.getAmount());
-		transaction.setTransactionType(TransactionType.TRANSFER);
-		transaction.setTransactionStatus(TransactionStatus.SUCCESS);
-		transaction.setRemarks("UPI Transfer");
-		transaction.setTransactionDate(LocalDateTime.now());
-		
-		transaction.setAiPrediction(prediction.getPrediction());
+        transaction.setTransactionDate(
+                LocalDateTime.now());
 
-		transaction.setAiScore(prediction.getScore());
+        // Build AI Request using Feature Extraction
 
-		transaction.setAiReason(prediction.getReason());
+        AIRequest aiRequest =
+                featureExtractionService.buildRequest(
+                        sender,
+                        receiver,
+                        senderWallet,
+                        receiverWallet,
+                        transaction
+                );
 
-		transactionRepository.save(transaction);
-		// Receiver Notification
+        AIPrediction prediction =
+                aiService.predict(aiRequest);
 
-		Notification receiverNotification = new Notification();
+        transaction.setAiPrediction(
+                prediction.getPrediction());
 
-		String receiverMessage = "Dear " + receiver.getFullName() + ",\n\nYou received ₹" + request.getAmount()
-				+ " from " + sender.getFullName() + "\n\nUPI Transaction ID : " + upiTxnId + "\nSender UPI : "
-				+ sender.getUpiId() + "\nAvailable Balance : ₹" + receiverWallet.getBalance() + "\nDate : "
-				+ LocalDateTime.now();
+        transaction.setAiScore(
+                prediction.getScore());
 
-		receiverNotification.setReceiverUserId(receiver.getId());
+        transaction.setAiReason(
+                prediction.getReason());
 
-		receiverNotification.setMessage(receiverMessage);
+        transactionRepository.save(transaction);
 
-		receiverNotification.setRead(false);
+        autoInvestigationService.investigate(transaction);
+        
+        // ==============================
+        // Receiver Notification
+        // ==============================
 
-		receiverNotification.setCreatedAt(LocalDateTime.now());
+        Notification receiverNotification =
+                new Notification();
 
-		notificationRepository.save(receiverNotification);
+        String receiverMessage =
+                "Dear " + receiver.getFullName()
+                + ",\n\nYou received ₹"
+                + request.getAmount()
+                + " from "
+                + sender.getFullName()
+                + "\n\nUPI Transaction ID : "
+                + transaction.getUpiTransactionId()
+                + "\nSender UPI : "
+                + sender.getUpiId()
+                + "\nAvailable Balance : ₹"
+                + receiverWallet.getBalance()
+                + "\nDate : "
+                + LocalDateTime.now();
 
-		// Sender Notification
+        receiverNotification.setReceiverUserId(
+                receiver.getId());
 
-		Notification senderNotification = new Notification();
+        receiverNotification.setMessage(
+                receiverMessage);
 
-		String senderMessage = "Dear " + sender.getFullName() + ",\n\n₹" + request.getAmount()
-				+ " transferred successfully to " + receiver.getFullName() + "\n\nUPI Transaction ID : " + upiTxnId
-				+ "\nReceiver UPI : " + receiver.getUpiId() + "\nAvailable Balance : ₹" + senderWallet.getBalance()
-				+ "\nDate : " + LocalDateTime.now();
+        receiverNotification.setRead(false);
 
-		senderNotification.setReceiverUserId(sender.getId());
+        receiverNotification.setCreatedAt(
+                LocalDateTime.now());
 
-		senderNotification.setMessage(senderMessage);
+        notificationRepository.save(receiverNotification);
 
-		senderNotification.setRead(false);
+        // ==============================
+        // Sender Notification
+        // ==============================
 
-		senderNotification.setCreatedAt(LocalDateTime.now());
+        Notification senderNotification =
+                new Notification();
 
-		notificationRepository.save(senderNotification);
-		
-		emailService.sendMoneyReceivedMail(
-		        receiver.getEmail(),
-		        "WalletPay Credit Alert",
-		        receiverMessage);
+        String senderMessage =
+                "Dear "
+                + sender.getFullName()
+                + ",\n\n₹"
+                + request.getAmount()
+                + " transferred successfully to "
+                + receiver.getFullName()
+                + "\n\nUPI Transaction ID : "
+                + transaction.getUpiTransactionId()
+                + "\nReceiver UPI : "
+                + receiver.getUpiId()
+                + "\nAvailable Balance : ₹"
+                + senderWallet.getBalance()
+                + "\nDate : "
+                + LocalDateTime.now();
 
-		emailService.sendMoneySentMail(
-		        sender.getEmail(),
-		        "WalletPay Debit Alert",
-		        senderMessage);
-		return "Transfer Successful";
-	}
+        senderNotification.setReceiverUserId(
+                sender.getId());
 
-	public String checkBalance(Long userId) {
+        senderNotification.setMessage(
+                senderMessage);
 
-		Wallet wallet = walletRepository.findByUser_Id(userId)
-				.orElseThrow(() -> new RuntimeException("Wallet not found"));
+        senderNotification.setRead(false);
 
-		return "Current Balance = " + wallet.getBalance();
-	}
+        senderNotification.setCreatedAt(
+                LocalDateTime.now());
 
-	public List<Transaction> getTransactionHistory(Long userId) {
+        notificationRepository.save(senderNotification);
 
-		return transactionRepository.findBySenderIdOrReceiverIdOrderByTransactionDateDesc(userId, userId);
-	}
+        // ==============================
+        // Email Alerts
+        // ==============================
 
-	public Wallet getWalletDetails(Long userId) {
+        emailService.sendMoneyReceivedMail(
+                receiver.getEmail(),
+                "WalletPay Credit Alert",
+                receiverMessage);
 
-		return walletRepository.findByUser_Id(userId).orElseThrow(() -> new RuntimeException("Wallet not found"));
-	}
-	
-	public byte[] downloadStatement(
-	        Long userId)
-	        throws Exception {
+        emailService.sendMoneySentMail(
+                sender.getEmail(),
+                "WalletPay Debit Alert",
+                senderMessage);
 
-	    User user =
-	            userRepository.findById(userId)
-	            .orElseThrow(() ->
-	                    new RuntimeException(
-	                            "User Not Found"));
+        return "Transfer Successful";
+    }
+    public String checkBalance(Long userId) {
 
-	    Wallet wallet =
-	            walletRepository
-	            .findByUser_Id(userId)
-	            .orElseThrow(() ->
-	                    new RuntimeException(
-	                            "Wallet Not Found"));
+        Wallet wallet =
+                walletRepository
+                        .findByUser_Id(userId)
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "Wallet not found"));
 
-	    List<Transaction> transactions =
-	            transactionRepository
-	            .findBySenderIdOrReceiverIdOrderByTransactionDateDesc(
-	                    userId,
-	                    userId);
+        return "Current Balance = ₹"
+                + wallet.getBalance();
 
-	    return statementPdfService
-	            .generateStatement(
-	                    user,
-	                    wallet,
-	                    transactions);
-	}
+    }
+
+    public List<Transaction> getTransactionHistory(Long userId) {
+
+        return transactionRepository
+                .findBySenderIdOrReceiverIdOrderByTransactionDateDesc(
+                        userId,
+                        userId);
+
+    }
+
+    public Wallet getWalletDetails(Long userId) {
+
+        return walletRepository
+                .findByUser_Id(userId)
+                .orElseThrow(() ->
+                        new RuntimeException(
+                                "Wallet not found"));
+
+    }
+
+    public byte[] downloadStatement(Long userId)
+            throws Exception {
+
+        User user =
+                userRepository
+                        .findById(userId)
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "User Not Found"));
+
+        Wallet wallet =
+                walletRepository
+                        .findByUser_Id(userId)
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "Wallet Not Found"));
+
+        List<Transaction> transactions =
+                transactionRepository
+                        .findBySenderIdOrReceiverIdOrderByTransactionDateDesc(
+                                userId,
+                                userId);
+
+        return statementPdfService.generateStatement(
+                user,
+                wallet,
+                transactions);
+
+    }
+
 }

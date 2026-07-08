@@ -14,7 +14,8 @@ import com.wallet.digitalwallet.dto.AdminDashboardResponse;
 import com.wallet.digitalwallet.dto.TransactionResponseDTO;
 import com.wallet.digitalwallet.entity.Transaction;
 import com.wallet.digitalwallet.service.AdminService;
-
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 @RestController
 @RequestMapping("/admin")
 public class AdminController {
@@ -67,6 +68,17 @@ public class AdminController {
     public List<TransactionResponseDTO> getHighRiskTransactions() {
 
         return adminService.getHighRiskTransactions();
+
+    }
+    
+    @PostMapping("/investigate/{id}")
+    public String investigateTransaction(
+
+            @PathVariable Long id
+
+    ) {
+
+        return adminService.investigateTransaction(id);
 
     }
 }
