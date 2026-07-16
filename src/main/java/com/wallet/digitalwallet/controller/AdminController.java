@@ -16,8 +16,10 @@ import com.wallet.digitalwallet.entity.Transaction;
 import com.wallet.digitalwallet.service.AdminService;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.CrossOrigin;
 @RestController
 @RequestMapping("/admin")
+@CrossOrigin(origins = "*")
 public class AdminController {
 
     @Autowired

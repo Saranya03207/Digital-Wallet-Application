@@ -8,12 +8,14 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.CrossOrigin;
 
 import com.wallet.digitalwallet.entity.Notification;
 import com.wallet.digitalwallet.service.NotificationService;
 
 @RestController
 @RequestMapping("/notifications")
+@CrossOrigin(origins = "*")
 public class NotificationController {
 
     @Autowired

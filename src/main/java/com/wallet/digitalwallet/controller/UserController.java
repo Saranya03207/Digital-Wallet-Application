@@ -22,6 +22,7 @@ import com.wallet.digitalwallet.service.UserService;
 
 @RestController
 @RequestMapping("/users")
+@CrossOrigin(origins = "*")
 public class UserController {
 
     @Autowired

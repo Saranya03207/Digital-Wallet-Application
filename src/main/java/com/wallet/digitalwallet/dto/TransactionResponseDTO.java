@@ -27,7 +27,37 @@ public class TransactionResponseDTO {
 
     private String aiReason;
     
+    private String disputeStatus;
+
+    private String disputeReason;
+
+    private String disputeAdminRemark;
+    
     private String remarks;
+
+    public String getDisputeStatus() {
+        return disputeStatus;
+    }
+
+    public void setDisputeStatus(String disputeStatus) {
+        this.disputeStatus = disputeStatus;
+    }
+
+    public String getDisputeReason() {
+        return disputeReason;
+    }
+
+    public void setDisputeReason(String disputeReason) {
+        this.disputeReason = disputeReason;
+    }
+
+    public String getDisputeAdminRemark() {
+        return disputeAdminRemark;
+    }
+
+    public void setDisputeAdminRemark(String disputeAdminRemark) {
+        this.disputeAdminRemark = disputeAdminRemark;
+    }
 
     public String getRemarks() {
         return remarks;

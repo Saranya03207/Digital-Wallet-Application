@@ -16,5 +16,10 @@ public class WebConfig
                 "/profile-images/**")
                 .addResourceLocations(
                         "file:uploads/profile/");
+
+        registry.addResourceHandler(
+                "/kyc-images/**")
+                .addResourceLocations(
+                        "file:uploads/kyc/");
     }
 }

@@ -29,9 +29,10 @@ public class Transaction {
     private TransactionType transactionType;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "transaction_status")
+    @Column(name = "transaction_status", columnDefinition = "VARCHAR(50) DEFAULT 'SUCCESS'")
     private TransactionStatus transactionStatus;
 
+    @Column(name = "remarks", columnDefinition = "VARCHAR(1000)")
     private String remarks;
 
     @Column(name = "transaction_date")
@@ -46,6 +47,33 @@ public class Transaction {
 	}
 
 	private String upiTransactionId;
+
+    @Column(name = "payment_note")
+    private String paymentNote;
+
+    @Column(name = "message")
+    private String message;
+
+    @Column(name = "conversation_id")
+    private String conversationId;
+
+    @Column(name = "is_message")
+    private Boolean isMessage = false;
+
+    @Column(name = "message_type")
+    private String messageType; // "PAYMENT" or "TEXT"
+
+    @Column(name = "attachment")
+    private String attachment;
+    
+    @Column(name = "dispute_status")
+    private String disputeStatus = "NONE"; // NONE, RAISED, REFUNDED, REJECTED
+
+    @Column(name = "dispute_reason", length = 500)
+    private String disputeReason;
+
+    @Column(name = "dispute_admin_remark", length = 500)
+    private String disputeAdminRemark;
     
  // AI Fraud Detection
 
@@ -74,7 +102,29 @@ public class Transaction {
     @Column(length = 500)
     private String aiReason;
     
-    
+    public String getDisputeStatus() {
+        return disputeStatus;
+    }
+
+    public void setDisputeStatus(String disputeStatus) {
+        this.disputeStatus = disputeStatus;
+    }
+
+    public String getDisputeReason() {
+        return disputeReason;
+    }
+
+    public void setDisputeReason(String disputeReason) {
+        this.disputeReason = disputeReason;
+    }
+
+    public String getDisputeAdminRemark() {
+        return disputeAdminRemark;
+    }
+
+    public void setDisputeAdminRemark(String disputeAdminRemark) {
+        this.disputeAdminRemark = disputeAdminRemark;
+    }
 
     public String getUpiTransactionId() {
 		return upiTransactionId;
@@ -149,6 +199,54 @@ public class Transaction {
 
     public void setTransactionDate(LocalDateTime transactionDate) {
         this.transactionDate = transactionDate;
+    }
+
+    public String getPaymentNote() {
+        return paymentNote;
+    }
+
+    public void setPaymentNote(String paymentNote) {
+        this.paymentNote = paymentNote;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
+    }
+
+    public String getConversationId() {
+        return conversationId;
+    }
+
+    public void setConversationId(String conversationId) {
+        this.conversationId = conversationId;
+    }
+
+    public Boolean getIsMessage() {
+        return isMessage;
+    }
+
+    public void setIsMessage(Boolean isMessage) {
+        this.isMessage = isMessage;
+    }
+
+    public String getMessageType() {
+        return messageType;
+    }
+
+    public void setMessageType(String messageType) {
+        this.messageType = messageType;
+    }
+
+    public String getAttachment() {
+        return attachment;
+    }
+
+    public void setAttachment(String attachment) {
+        this.attachment = attachment;
     }
    
 }

@@ -92,8 +92,8 @@ VALUES
  receiver_user_id bigint,
  amount decimal(12,2) not null check(amount>0),
  transaction_type enum('ADD_MONEY','TRANSFER','WITHDRAW') not null,
- transaction_status enum('SUCCESS','FAILED','PENDING')default 'SUCCESS',
- remarks varchar(255),
+ transaction_status varchar(50) default 'SUCCESS',
+ remarks varchar(1000),
  transaction_date timestamp default current_timestamp,
  constraint fk_sender
  foreign key(sender_user_id)

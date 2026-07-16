@@ -11,6 +11,8 @@ import Profile from "./pages/Profile";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Notifications from "./pages/Notifications";
 import AddMoney from "./pages/AddMoney";
+import WithdrawMoney from "./pages/WithdrawMoney";
+import BankAccounts from "./pages/BankAccounts";
 import VerifyOtp from "./pages/VerifyOtp";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
@@ -20,6 +22,9 @@ import AdminUsers from "./pages/AdminUsers";
 import AdminTransactions from "./pages/AdminTransactions";
 import AdminAnalytics from "./pages/AdminAnalytics";
 import FraudMonitor from "./pages/FraudMonitor";
+import KycVerification from "./pages/KycVerification";
+import KycManagement from "./pages/KycManagement";
+import AdminSupport from "./pages/AdminSupport";
 
 function App() {
   return (
@@ -44,7 +49,9 @@ function App() {
 
         <Route path="/notifications"element={<ProtectedRoute><Notifications /></ProtectedRoute>}/>
 
-        <Route path="/add-money"element={<AddMoney />}/>
+        <Route path="/add-money"element={<ProtectedRoute><AddMoney /></ProtectedRoute>}/>
+        <Route path="/withdraw-money"element={<ProtectedRoute><WithdrawMoney /></ProtectedRoute>}/>
+        <Route path="/bank-accounts"element={<ProtectedRoute><BankAccounts /></ProtectedRoute>}/>
 
         <Route path="/verify-otp"element={<VerifyOtp />}/>
 
@@ -54,7 +61,11 @@ function App() {
 
         <Route path="/change-password"element={<ChangePassword />}/>
 
+        <Route path="/kyc" element={<ProtectedRoute><KycVerification /></ProtectedRoute>} />
+
         <Route path="/admin" element={<AdminDashboard/>}/>
+
+        <Route path="/admin/kyc" element={<KycManagement />} />
 
         <Route path="/admin/transactions" element={<AdminTransactions />}/>
 
@@ -63,6 +74,7 @@ function App() {
         <Route path="/admin/analytics"element={<AdminAnalytics/>}/>
 
         <Route path="/admin/fraud"element={<FraudMonitor />}/>
+        <Route path="/admin/support" element={<AdminSupport />} />
       </Routes>
     </BrowserRouter>
   );

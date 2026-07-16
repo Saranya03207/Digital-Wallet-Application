@@ -1,500 +1,156 @@
 import { useEffect, useState } from "react";
 import API from "../services/api";
 import AdminLayout from "../components/AdminLayout";
+import { UsersIcon, ActiveUsersIcon, BlockedUsersIcon, CheckCircleIcon, BanIcon, SearchIcon, ShieldAlertIcon } from "../components/AdminIcons";
 
 function AdminUsers() {
+  const [users, setUsers] = useState([]);
+  const [search, setSearch] = useState("");
 
-    const [users, setUsers] = useState([]);
-    const [search, setSearch] = useState("");
+  useEffect(() => { loadUsers(); }, []);
 
-    useEffect(() => {
+  async function loadUsers() {
+    try { const res = await API.get("/users/all"); setUsers(res.data); }
+    catch (err) { console.log(err); }
+  }
 
-        loadUsers();
+  async function blockUser(id) { await API.put(`/users/block/${id}`); loadUsers(); }
+  async function activateUser(id) { await API.put(`/users/activate/${id}`); loadUsers(); }
 
-    }, []);
+  const filtered = users.filter(u =>
+    u.fullName.toLowerCase().includes(search.toLowerCase()) ||
+    u.email.toLowerCase().includes(search.toLowerCase()) ||
+    u.upiId.toLowerCase().includes(search.toLowerCase())
+  );
 
-    async function loadUsers() {
+  const active = users.filter(u => u.status === "ACTIVE").length;
+  const blocked = users.filter(u => u.status !== "ACTIVE").length;
 
-        try {
+  return (
+    <AdminLayout>
+      <div style={{ marginBottom: "28px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "4px" }}>
+          <UsersIcon size={28} color="#0f172a" />
+          <h1 style={{ fontSize: "26px", fontWeight: 800, color: "#0f172a", margin: 0 }}>User Management</h1>
+        </div>
+        <p style={{ color: "#64748b", fontSize: "14px" }}>Manage WalletPay customers and administrators</p>
+      </div>
 
-            const response =
-                await API.get("/users/all");
-
-            setUsers(response.data);
-
-        }
-
-        catch (error) {
-
-            console.log(error);
-
-        }
-
-    }
-
-    async function blockUser(id) {
-
-        await API.put(`/users/block/${id}`);
-
-        loadUsers();
-
-    }
-
-    async function activateUser(id) {
-
-        await API.put(`/users/activate/${id}`);
-
-        loadUsers();
-
-    }
-
-    const filteredUsers = users.filter(user =>
-
-        user.fullName
-            .toLowerCase()
-            .includes(search.toLowerCase())
-
-        ||
-
-        user.email
-            .toLowerCase()
-            .includes(search.toLowerCase())
-
-        ||
-
-        user.upiId
-            .toLowerCase()
-            .includes(search.toLowerCase())
-
-    );
-
-    return (
-
-        <AdminLayout>
-
-            <h1
-                style={{
-                    color:"#1e293b",
-                    marginBottom:"10px"
-                }}
-            >
-                👥 User Management
-            </h1>
-
-            <p
-                style={{
-                    color:"#64748b",
-                    marginBottom:"30px"
-                }}
-            >
-                Manage WalletPay customers and administrators.
-            </p>
-
-            {/* SUMMARY */}
-
-            <div
-                style={{
-
-                    background:"white",
-
-                    padding:"25px",
-
-                    borderRadius:"18px",
-
-                    boxShadow:"0 8px 25px rgba(0,0,0,.08)",
-
-                    marginBottom:"30px",
-
-                    display:"flex",
-
-                    justifyContent:"space-between",
-
-                    alignItems:"center"
-
-                }}
-            >
-
-                <div>
-
-                    <h3
-                        style={{
-                            margin:0,
-                            color:"#64748b"
-                        }}
-                    >
-                        Total Registered Users
-                    </h3>
-
-                    <h1
-                        style={{
-                            marginTop:"10px",
-                            color:"#4f46e5"
-                        }}
-                    >
-                        {users.length}
-                    </h1>
-
-                </div>
-
+      {/* Stats */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: "16px", marginBottom: "24px" }}>
+        {[
+          { label: "Total Users", value: users.length, color: "#6366f1", bg: "#eef2ff", icon: <UsersIcon size={24} color="#6366f1" /> },
+          { label: "Active", value: active, color: "#10b981", bg: "#f0fdf4", icon: <ActiveUsersIcon size={24} color="#10b981" /> },
+          { label: "Blocked", value: blocked, color: "#ef4444", bg: "#fef2f2", icon: <BlockedUsersIcon size={24} color="#ef4444" /> },
+        ].map((s, i) => (
+          <div key={i} style={{ background: "white", borderRadius: "18px", padding: "20px 24px",
+            boxShadow: "0 4px 16px rgba(0,0,0,0.06)", border: "1px solid #f1f5f9",
+            display: "flex", alignItems: "center", gap: "16px" }}>
+            <div style={{ width: "48px", height: "48px", borderRadius: "14px", background: s.bg,
+              display: "flex", alignItems: "center", justifyContent: "center", fontSize: "22px" }}>{s.icon}</div>
+            <div>
+              <p style={{ color: "#64748b", fontSize: "13px", fontWeight: 500 }}>{s.label}</p>
+              <h2 style={{ color: s.color, fontSize: "24px", fontWeight: 800 }}>{s.value}</h2>
             </div>
-
-            {/* SEARCH */}
-
-            <input
-
-                placeholder="Search Name, Email or UPI"
-
-                value={search}
-
-                onChange={(e)=>setSearch(e.target.value)}
-
-                style={{
-
-                    width:"100%",
-
-                    padding:"15px",
-
-                    borderRadius:"12px",
-
-                    border:"1px solid #ddd",
-
-                    marginBottom:"25px",
-
-                    fontSize:"16px"
-
-                }}
-
-            />
-
-            {/* TABLE */}
-
-            <div
-                style={{
-
-                    background:"white",
-
-                    borderRadius:"20px",
-
-                    overflow:"hidden",
-
-                    boxShadow:"0 8px 25px rgba(0,0,0,.08)"
-
-                }}
-            >
-
-                <table
-                    style={{
-                        width:"100%",
-                        borderCollapse:"collapse"
-                    }}
-                >
-
-                    <thead
-                        style={{
-                            background:"#4f46e5",
-                            color:"white"
-                        }}
-                    >
-
-                        <tr>
-
-                            <th style={th}>User</th>
-
-                            <th style={th}>Email</th>
-
-                            <th style={th}>UPI</th>
-
-                            <th style={th}>Role</th>
-
-                            <th style={th}>Status</th>
-
-                            <th style={th}>Action</th>
-
-                        </tr>
-
-                    </thead>
-
-                    <tbody>
-
-                        {
-
-                            filteredUsers.map(user=>(
-
-                                <tr key={user.id}>
-
-                                    {/* USER */}
-
-                                    <td style={td}>
-
-                                        <div
-                                            style={{
-
-                                                display:"flex",
-
-                                                alignItems:"center",
-
-                                                gap:"15px"
-
-                                            }}
-                                        >
-
-                                            <div
-                                                style={{
-
-                                                    width:"45px",
-
-                                                    height:"45px",
-
-                                                    borderRadius:"50%",
-
-                                                    background:"#4f46e5",
-
-                                                    color:"white",
-
-                                                    display:"flex",
-
-                                                    justifyContent:"center",
-
-                                                    alignItems:"center",
-
-                                                    fontWeight:"bold",
-
-                                                    fontSize:"20px"
-
-                                                }}
-                                            >
-
-                                                {user.fullName.charAt(0)}
-
-                                            </div>
-
-                                            <div>
-
-                                                <b>{user.fullName}</b>
-
-                                            </div>
-
-                                        </div>
-
-                                    </td>
-
-                                    <td style={td}>{user.email}</td>
-
-                                    <td style={td}>{user.upiId}</td>
-
-                                    <td style={td}>
-
-                                        <span
-                                            style={{
-
-                                                background:
-
-                                                user.role==="ADMIN"
-
-                                                ?
-
-                                                "#dbeafe"
-
-                                                :
-
-                                                "#ede9fe",
-
-                                                color:
-
-                                                user.role==="ADMIN"
-
-                                                ?
-
-                                                "#2563eb"
-
-                                                :
-
-                                                "#4f46e5",
-
-                                                padding:"8px 14px",
-
-                                                borderRadius:"30px",
-
-                                                fontWeight:"bold"
-
-                                            }}
-                                        >
-
-                                            {user.role}
-
-                                        </span>
-
-                                    </td>
-
-                                    <td style={td}>
-
-                                        <span
-                                            style={{
-
-                                                background:
-
-                                                user.status==="ACTIVE"
-
-                                                ?
-
-                                                "#dcfce7"
-
-                                                :
-
-                                                "#fee2e2",
-
-                                                color:
-
-                                                user.status==="ACTIVE"
-
-                                                ?
-
-                                                "#16a34a"
-
-                                                :
-
-                                                "#dc2626",
-
-                                                padding:"8px 14px",
-
-                                                borderRadius:"30px",
-
-                                                fontWeight:"bold"
-
-                                            }}
-                                        >
-
-                                            {user.status}
-
-                                        </span>
-
-                                    </td>
-
-                                    <td style={td}>
-
-                                        {
-
-                                            user.role==="ADMIN"
-
-                                            ?
-
-                                            <button
-                                                disabled
-                                                style={{
-
-                                                    background:"#94a3b8",
-
-                                                    color:"white",
-
-                                                    border:"none",
-
-                                                    padding:"10px 16px",
-
-                                                    borderRadius:"10px"
-
-                                                }}
-                                            >
-
-                                                Protected
-
-                                            </button>
-
-                                            :
-
-                                            user.status==="ACTIVE"
-
-                                            ?
-
-                                            <button
-
-                                                onClick={()=>blockUser(user.id)}
-
-                                                style={{
-
-                                                    background:"#ef4444",
-
-                                                    color:"white",
-
-                                                    border:"none",
-
-                                                    padding:"10px 18px",
-
-                                                    borderRadius:"10px",
-
-                                                    cursor:"pointer"
-
-                                                }}
-
-                                            >
-
-                                                Block
-
-                                            </button>
-
-                                            :
-
-                                            <button
-
-                                                onClick={()=>activateUser(user.id)}
-
-                                                style={{
-
-                                                    background:"#16a34a",
-
-                                                    color:"white",
-
-                                                    border:"none",
-
-                                                    padding:"10px 18px",
-
-                                                    borderRadius:"10px",
-
-                                                    cursor:"pointer"
-
-                                                }}
-
-                                            >
-
-                                                Activate
-
-                                            </button>
-
-                                        }
-
-                                    </td>
-
-                                </tr>
-
-                            ))
-
-                        }
-
-                    </tbody>
-
-                </table>
-
-            </div>
-
-        </AdminLayout>
-
-    );
-
+          </div>
+        ))}
+      </div>
+
+      {/* Search */}
+      <div style={{ position: "relative", marginBottom: "20px" }}>
+        <span style={{ position: "absolute", left: "16px", top: "50%", transform: "translateY(-50%)", display: "flex", alignItems: "center" }}><SearchIcon size={18} color="#94a3b8" /></span>
+        <input placeholder="Search by name, email or UPI ID..." value={search}
+          onChange={e => setSearch(e.target.value)}
+          style={{ width: "100%", padding: "14px 18px 14px 44px", borderRadius: "14px",
+            border: "2px solid #e2e8f0", fontSize: "15px", background: "white", color: "#0f172a", outline: "none" }} />
+      </div>
+
+      {/* Table */}
+      <div style={{ background: "white", borderRadius: "20px", overflow: "hidden",
+        boxShadow: "0 4px 20px rgba(0,0,0,0.06)", border: "1px solid #f1f5f9" }}>
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+              <tr style={{ background: "linear-gradient(135deg,#4f46e5,#7c3aed)" }}>
+                {["User", "Email", "UPI ID", "Role", "Status", "Action"].map(h => (
+                  <th key={h} style={{ padding: "16px 20px", textAlign: "left", color: "white",
+                    fontWeight: 700, fontSize: "13px", letterSpacing: "0.3px" }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((user, idx) => (
+                <tr key={user.id} style={{ background: idx % 2 === 0 ? "#f8fafc" : "white" }}>
+                  <td style={{ padding: "16px 20px", borderBottom: "1px solid #f1f5f9" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                      <div style={{ width: "40px", height: "40px", borderRadius: "13px",
+                        background: "linear-gradient(135deg,#6366f1,#8b5cf6)",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        color: "white", fontWeight: 800, fontSize: "16px", flexShrink: 0 }}>
+                        {user.fullName.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <p style={{ fontWeight: 700, color: "#0f172a", fontSize: "14px" }}>{user.fullName}</p>
+                        <p style={{ color: "#94a3b8", fontSize: "12px" }}>ID: {user.id}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td style={{ padding: "16px 20px", borderBottom: "1px solid #f1f5f9", color: "#475569", fontSize: "14px" }}>{user.email}</td>
+                  <td style={{ padding: "16px 20px", borderBottom: "1px solid #f1f5f9" }}>
+                    <code style={{ background: "#f1f5f9", padding: "4px 10px", borderRadius: "8px", fontSize: "13px", color: "#6366f1", fontWeight: 600 }}>{user.upiId}</code>
+                  </td>
+                  <td style={{ padding: "16px 20px", borderBottom: "1px solid #f1f5f9" }}>
+                    <span style={{ background: user.role === "ADMIN" ? "#dbeafe" : "#ede9fe",
+                      color: user.role === "ADMIN" ? "#1d4ed8" : "#6d28d9",
+                      padding: "5px 12px", borderRadius: "20px", fontSize: "13px", fontWeight: 700 }}>
+                      {user.role}
+                    </span>
+                  </td>
+                  <td style={{ padding: "16px 20px", borderBottom: "1px solid #f1f5f9" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                      <div style={{ width: "7px", height: "7px", borderRadius: "50%",
+                        background: user.status === "ACTIVE" ? "#10b981" : "#ef4444" }} />
+                      <span style={{ background: user.status === "ACTIVE" ? "#f0fdf4" : "#fef2f2",
+                        color: user.status === "ACTIVE" ? "#15803d" : "#dc2626",
+                        padding: "5px 12px", borderRadius: "20px", fontSize: "13px", fontWeight: 700 }}>
+                        {user.status}
+                      </span>
+                    </div>
+                  </td>
+                  <td style={{ padding: "16px 20px", borderBottom: "1px solid #f1f5f9" }}>
+                    {user.role === "ADMIN" ? (
+                      <span style={{ background: "#f1f5f9", color: "#94a3b8", padding: "8px 14px",
+                        borderRadius: "10px", fontSize: "13px", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "6px" }}><ShieldAlertIcon size={16} color="#94a3b8" /> Protected</span>
+                    ) : user.status === "ACTIVE" ? (
+                      <button onClick={() => blockUser(user.id)} style={{ padding: "8px 18px", borderRadius: "10px",
+                        background: "linear-gradient(135deg,#ef4444,#f87171)", color: "white", border: "none",
+                        fontWeight: 700, fontSize: "13px", boxShadow: "0 4px 12px rgba(239,68,68,0.25)", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
+                        <BanIcon size={16} color="white" /> Block
+                      </button>
+                    ) : (
+                      <button onClick={() => activateUser(user.id)} style={{ padding: "8px 18px", borderRadius: "10px",
+                        background: "linear-gradient(135deg,#10b981,#34d399)", color: "white", border: "none",
+                        fontWeight: 700, fontSize: "13px", boxShadow: "0 4px 12px rgba(16,185,129,0.25)", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
+                        <CheckCircleIcon size={16} color="white" /> Activate
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+              {filtered.length === 0 && (
+                <tr>
+                  <td colSpan={6} style={{ textAlign: "center", padding: "48px", color: "#94a3b8" }}>
+                    <div style={{ display: "flex", justifyContent: "center", marginBottom: "12px" }}><SearchIcon size={40} color="#94a3b8" /></div>
+                    <p style={{ fontWeight: 600 }}>No users found</p>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </AdminLayout>
+  );
 }
-
-const th={
-
-    padding:"18px",
-
-    textAlign:"left"
-
-};
-
-const td={
-
-    padding:"18px",
-
-    borderBottom:"1px solid #eee"
-
-};
 
 export default AdminUsers;

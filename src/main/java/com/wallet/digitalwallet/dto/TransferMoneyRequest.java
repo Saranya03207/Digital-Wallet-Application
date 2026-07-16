@@ -8,6 +8,8 @@ public class TransferMoneyRequest {
     private Long receiverUserId;
     private BigDecimal amount;
     private String transactionPin;
+    private String paymentNote;
+    private String conversationId;
 
     public Long getSenderUserId() {
         return senderUserId;
@@ -43,5 +45,21 @@ public class TransferMoneyRequest {
 
         this.transactionPin =
                 transactionPin;
+    }
+
+    public String getPaymentNote() {
+        return paymentNote;
+    }
+
+    public void setPaymentNote(String paymentNote) {
+        this.paymentNote = paymentNote;
+    }
+
+    public String getConversationId() {
+        return conversationId;
+    }
+
+    public void setConversationId(String conversationId) {
+        this.conversationId = conversationId;
     }
 }

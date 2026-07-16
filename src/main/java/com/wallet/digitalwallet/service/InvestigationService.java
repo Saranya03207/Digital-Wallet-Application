@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.wallet.digitalwallet.ai.AIService;
+import com.wallet.digitalwallet.ai.BehaviourProfile;
 import com.wallet.digitalwallet.ai.InvestigationRequest;
 import com.wallet.digitalwallet.ai.InvestigationResponse;
 import com.wallet.digitalwallet.entity.Status;
@@ -11,7 +12,6 @@ import com.wallet.digitalwallet.entity.Transaction;
 import com.wallet.digitalwallet.entity.User;
 import com.wallet.digitalwallet.repository.TransactionRepository;
 import com.wallet.digitalwallet.repository.UserRepository;
-import com.wallet.digitalwallet.repository.WalletRepository;
 
 @Service
 public class InvestigationService {
@@ -20,24 +20,36 @@ public class InvestigationService {
     private AIService aiService;
 
     @Autowired
+    private BehaviourProfileService behaviourProfileService;
+
+    @Autowired
     private TransactionRepository transactionRepository;
 
     @Autowired
     private UserRepository userRepository;
-    
-    @Autowired
-    private WalletRepository walletRepository;
 
     public void investigate(Transaction transaction) {
 
         User sender = transaction.getSender();
+        User receiver = transaction.getReceiver();
+
+        // ==========================================
+        // Build Behaviour Profile
+        // ==========================================
+
+        BehaviourProfile profile =
+                behaviourProfileService.buildProfile(
+                        sender,
+                        receiver);
+
+        // ==========================================
+        // Build Investigation Request
+        // ==========================================
 
         InvestigationRequest request =
                 new InvestigationRequest();
 
-        // -----------------------------
-        // Transaction Information
-        // -----------------------------
+        // Transaction Details
 
         request.setAmount(
                 transaction.getAmount().doubleValue());
@@ -50,110 +62,48 @@ public class InvestigationService {
                         .getDayOfWeek()
                         .getValue());
 
-        // -----------------------------
-        // Wallet Information
-        // -----------------------------
-        double senderBalance =
-                walletRepository
-                        .findByUser_Id(sender.getId())
-                        .orElseThrow()
-                        .getBalance()
-                        .doubleValue();
-
-        request.setSenderBalance(senderBalance);
-
-        double receiverBalance =
-                walletRepository
-                        .findByUser_Id(
-                                transaction.getReceiver().getId())
-                        .orElseThrow()
-                        .getBalance()
-                        .doubleValue();
-
-        request.setReceiverBalance(receiverBalance);
-
-        // -----------------------------
         // Behaviour Features
-        // -----------------------------
-
-        Double avg =
-                transactionRepository
-                        .getAverageTransactionAmount(
-                                sender.getId());
 
         request.setAverageAmount(
-                avg == null ? 0 : avg);
+                profile.getAverageAmount());
 
         request.setTransactionsToday(
-                transactionRepository
-                        .countTodayTransactions(
-                                sender.getId()));
+                profile.getTransactionsToday());
 
         request.setTransactionsLastHour(
-                transactionRepository
-                        .countTransactionsAfter(
-                                sender.getId(),
-                                transaction.getTransactionDate()
-                                        .minusHours(1)));
+                profile.getTransactionsLastHour());
 
-        request.setNewReceiver(
+        request.setSenderBalance(
+                profile.getSenderBalance());
 
-                transactionRepository
-                        .countBySenderIdAndReceiverId(
-                                sender.getId(),
-                                transaction.getReceiver().getId())
-                        == 1
-
-                        ? 1
-
-                        : 0);
-
-        request.setNightTransaction(
-
-                transaction.getTransactionDate()
-                        .getHour() < 6
-
-                        ? 1
-
-                        : 0);
+        request.setReceiverBalance(
+                profile.getReceiverBalance());
 
         request.setAccountAgeDays(
-
-        	    (int)
-
-        	    java.time.temporal.ChronoUnit.DAYS.between(
-
-        	        sender.getCreatedAt().toLocalDate(),
-
-        	        java.time.LocalDate.now()
-
-        	    )
-
-        	);
+                profile.getAccountAgeDays());
 
         request.setRepeatedReceiver(
+                profile.getReceiverFrequency());
 
-                transactionRepository
-                        .countBySenderIdAndReceiverId(
+        request.setNewReceiver(
+                profile.isNewReceiver() ? 1 : 0);
 
-                                sender.getId(),
+        request.setNightTransaction(
+                profile.isNightTransaction() ? 1 : 0);
 
-                                transaction.getReceiver().getId()
-
-                        ));
-
+        // Future Feature
         request.setDeviceChanged(0);
 
-        // -----------------------------
-        // Call AI
-        // -----------------------------
+        // ==========================================
+        // AI Investigation
+        // ==========================================
 
         InvestigationResponse response =
                 aiService.investigate(request);
 
-        // -----------------------------
-        // Update Transaction
-        // -----------------------------
+        // ==========================================
+        // Save AI Result
+        // ==========================================
 
         transaction.setAiPrediction(
                 response.getPrediction());
@@ -164,34 +114,34 @@ public class InvestigationService {
         transaction.setAiReason(
                 response.getReason());
 
-        // -----------------------------
-        // AI Decision
-        // -----------------------------
+        // ==========================================
+        // Decision
+        // ==========================================
 
-        if ("Fraud".equalsIgnoreCase(
-                response.getPrediction())) {
+        switch (response.getPrediction()) {
 
-            transaction.setRemarks(
-                    "Automatically Blocked");
+            case "Fraud":
 
-            sender.setStatus(Status.BLOCKED);
+                transaction.setRemarks(
+                        "Automatically Blocked by AI");
 
-            userRepository.save(sender);
+                sender.setStatus(Status.BLOCKED);
 
-        }
+                userRepository.save(sender);
 
-        else if ("Suspicious".equalsIgnoreCase(
-                response.getPrediction())) {
+                break;
 
-            transaction.setRemarks(
-                    "Under AI Monitoring");
+            case "Suspicious":
 
-        }
+                transaction.setRemarks(
+                        "Under AI Monitoring");
 
-        else {
+                break;
 
-            transaction.setRemarks(
-                    "AI Cleared");
+            default:
+
+                transaction.setRemarks(
+                        "AI Cleared");
 
         }
 

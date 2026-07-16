@@ -12,11 +12,13 @@ import com.wallet.digitalwallet.entity.Wallet;
 import org.springframework.web.bind.annotation.*;
 import com.wallet.digitalwallet.dto.TransferMoneyRequest;
 import com.wallet.digitalwallet.dto.AddMoneyRequest;
+import com.wallet.digitalwallet.dto.WithdrawMoneyRequest;
 import com.wallet.digitalwallet.service.WalletService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 @RestController
 @RequestMapping("/wallet")
+@CrossOrigin(origins = "*")
 public class WalletController {
 
     @Autowired
@@ -27,6 +29,13 @@ public class WalletController {
             @RequestBody AddMoneyRequest request) {
 
         return walletService.addMoney(request);
+    }
+
+    @PostMapping("/withdraw")
+    public String withdrawMoney(
+            @RequestBody WithdrawMoneyRequest request) {
+
+        return walletService.withdrawMoney(request);
     }
 
     @PostMapping("/transfer")
@@ -79,5 +88,15 @@ public class WalletController {
                         MediaType.APPLICATION_PDF)
 
                 .body(pdf);
+    }
+
+    @GetMapping("/statement-csv/{userId}")
+    public ResponseEntity<byte[]> downloadStatementCsv(@PathVariable Long userId) {
+        byte[] csv = walletService.downloadStatementCsv(userId);
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=WalletPayStatement.csv")
+                .header(HttpHeaders.CONTENT_TYPE, "text/csv; charset=UTF-8")
+                .body(csv);
     }
 }

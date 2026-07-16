@@ -36,6 +36,8 @@ public interface TransactionRepository
     List<Transaction> findByAiPredictionOrderByTransactionDateDesc(
             String prediction);
 
+    List<Transaction> findByDisputeStatusNotOrderByTransactionDateDesc(String disputeStatus);
+
     @Modifying
     @Query("""
         UPDATE Transaction t
@@ -120,6 +122,32 @@ public interface TransactionRepository
     Double getMaximumTransaction(
             @Param("userId") Long userId);
     
-    
+    @Query("""
+    		SELECT MIN(t.amount)
+    		FROM Transaction t
+    		WHERE t.sender.id=:userId
+    		""")
+    		Double getMinimumTransaction(
+    		        @Param("userId") Long userId);
+
+    @Query("""
+        SELECT t FROM Transaction t
+        WHERE (t.sender.id = :u1 AND t.receiver.id = :u2)
+           OR (t.sender.id = :u2 AND t.receiver.id = :u1)
+        ORDER BY t.transactionDate ASC
+    """)
+    List<Transaction> findConversationHistory(
+            @Param("u1") Long u1,
+            @Param("u2") Long u2);
+
+    @Query("""
+        SELECT t.receiver.id, COUNT(t) as totalCount
+        FROM Transaction t
+        WHERE t.sender.id = :userId AND t.receiver IS NOT NULL
+        GROUP BY t.receiver.id
+        ORDER BY totalCount DESC
+    """)
+    List<Object[]> findFrequentlyPaidReceiverIds(
+            @Param("userId") Long userId);
 
 }

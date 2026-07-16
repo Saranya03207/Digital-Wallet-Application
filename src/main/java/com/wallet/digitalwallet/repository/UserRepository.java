@@ -22,6 +22,8 @@ public interface UserRepository
 
     Optional<User> findByUpiId(String upiId);
 
+    Optional<User> findByMobileNumber(String mobileNumber);
+
     boolean existsByEmail(
             String email);
 
@@ -30,4 +32,16 @@ public interface UserRepository
 
     boolean existsByAadhaarNumber(
             String aadhaarNumber);
+
+    @org.springframework.data.jpa.repository.Query("""
+        SELECT u FROM User u
+        WHERE (LOWER(u.fullName) LIKE LOWER(CONCAT('%', :keyword, '%'))
+           OR LOWER(u.mobileNumber) LIKE LOWER(CONCAT('%', :keyword, '%'))
+           OR LOWER(u.upiId) LIKE LOWER(CONCAT('%', :keyword, '%')))
+          AND u.id != :currentUserId
+          AND u.status != com.wallet.digitalwallet.entity.Status.BLOCKED
+    """)
+    List<User> searchAllContacts(
+            @org.springframework.data.repository.query.Param("keyword") String keyword,
+            @org.springframework.data.repository.query.Param("currentUserId") Long currentUserId);
 }

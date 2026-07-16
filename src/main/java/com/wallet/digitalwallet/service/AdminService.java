@@ -1,11 +1,15 @@
 package com.wallet.digitalwallet.service;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.TreeSet;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -102,31 +106,203 @@ public class AdminService {
     }
     
     public Map<String, Long> getDailyTransactions() {
-
-        Map<String, Long> map =
-                new LinkedHashMap<>();
-
-        List<Transaction> list =
-                transactionRepository.findAll();
-
-        DateTimeFormatter formatter =
-                DateTimeFormatter.ofPattern("dd-MM");
-
-        for(Transaction txn : list){
-
-            String day =
-                    txn.getTransactionDate()
-                            .format(formatter);
-
-            map.put(
-                    day,
-                    map.getOrDefault(day,0L)+1
-            );
-
+        TreeSet<LocalDate> dates = new TreeSet<>();
+        for (int i = 6; i >= 0; i--) {
+            dates.add(LocalDate.now().minusDays(i));
         }
-
+        for (Transaction txn : transactionRepository.findAll()) {
+            if (txn.getTransactionDate() != null) {
+                dates.add(txn.getTransactionDate().toLocalDate());
+            }
+        }
+        Map<String, Long> map = new LinkedHashMap<>();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd MMM");
+        for (LocalDate date : dates) {
+            map.put(date.format(formatter), 0L);
+        }
+        for (Transaction txn : transactionRepository.findAll()) {
+            if (txn.getTransactionDate() != null) {
+                String label = txn.getTransactionDate().toLocalDate().format(formatter);
+                map.put(label, map.getOrDefault(label, 0L) + 1);
+            }
+        }
         return map;
+    }
 
+    public Map<String, BigDecimal> getDailyVolume() {
+        TreeSet<LocalDate> dates = new TreeSet<>();
+        for (int i = 6; i >= 0; i--) {
+            dates.add(LocalDate.now().minusDays(i));
+        }
+        for (Transaction txn : transactionRepository.findAll()) {
+            if (txn.getTransactionDate() != null) {
+                dates.add(txn.getTransactionDate().toLocalDate());
+            }
+        }
+        Map<String, BigDecimal> map = new LinkedHashMap<>();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd MMM");
+        for (LocalDate date : dates) {
+            map.put(date.format(formatter), BigDecimal.ZERO);
+        }
+        for (Transaction txn : transactionRepository.findAll()) {
+            if (txn.getTransactionDate() != null && txn.getAmount() != null) {
+                String label = txn.getTransactionDate().toLocalDate().format(formatter);
+                map.put(label, map.getOrDefault(label, BigDecimal.ZERO).add(txn.getAmount()));
+            }
+        }
+        return map;
+    }
+
+    public Map<String, Long> getWeeklyTransactions() {
+        TreeSet<LocalDate> mondays = new TreeSet<>();
+        LocalDate today = LocalDate.now();
+        LocalDate currentMonday = today.with(java.time.DayOfWeek.MONDAY);
+        for (int i = 7; i >= 0; i--) {
+            mondays.add(currentMonday.minusWeeks(i));
+        }
+        for (Transaction txn : transactionRepository.findAll()) {
+            if (txn.getTransactionDate() != null) {
+                mondays.add(txn.getTransactionDate().toLocalDate().with(java.time.DayOfWeek.MONDAY));
+            }
+        }
+        Map<String, Long> map = new LinkedHashMap<>();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd MMM");
+        for (LocalDate mon : mondays) {
+            map.put("Wk " + mon.format(formatter), 0L);
+        }
+        for (Transaction txn : transactionRepository.findAll()) {
+            if (txn.getTransactionDate() != null) {
+                LocalDate mon = txn.getTransactionDate().toLocalDate().with(java.time.DayOfWeek.MONDAY);
+                String label = "Wk " + mon.format(formatter);
+                map.put(label, map.getOrDefault(label, 0L) + 1);
+            }
+        }
+        return map;
+    }
+
+    public Map<String, BigDecimal> getWeeklyVolume() {
+        TreeSet<LocalDate> mondays = new TreeSet<>();
+        LocalDate today = LocalDate.now();
+        LocalDate currentMonday = today.with(java.time.DayOfWeek.MONDAY);
+        for (int i = 7; i >= 0; i--) {
+            mondays.add(currentMonday.minusWeeks(i));
+        }
+        for (Transaction txn : transactionRepository.findAll()) {
+            if (txn.getTransactionDate() != null) {
+                mondays.add(txn.getTransactionDate().toLocalDate().with(java.time.DayOfWeek.MONDAY));
+            }
+        }
+        Map<String, BigDecimal> map = new LinkedHashMap<>();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd MMM");
+        for (LocalDate mon : mondays) {
+            map.put("Wk " + mon.format(formatter), BigDecimal.ZERO);
+        }
+        for (Transaction txn : transactionRepository.findAll()) {
+            if (txn.getTransactionDate() != null && txn.getAmount() != null) {
+                LocalDate mon = txn.getTransactionDate().toLocalDate().with(java.time.DayOfWeek.MONDAY);
+                String label = "Wk " + mon.format(formatter);
+                map.put(label, map.getOrDefault(label, BigDecimal.ZERO).add(txn.getAmount()));
+            }
+        }
+        return map;
+    }
+
+    public Map<String, Long> getMonthlyTransactions() {
+        TreeSet<YearMonth> months = new TreeSet<>();
+        int currentYear = LocalDate.now().getYear();
+        for (int m = 1; m <= 12; m++) {
+            months.add(YearMonth.of(currentYear, m));
+        }
+        for (Transaction txn : transactionRepository.findAll()) {
+            if (txn.getTransactionDate() != null) {
+                months.add(YearMonth.from(txn.getTransactionDate()));
+            }
+        }
+        Map<String, Long> map = new LinkedHashMap<>();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM yyyy", Locale.ENGLISH);
+        for (YearMonth ym : months) {
+            map.put(ym.format(formatter), 0L);
+        }
+        for (Transaction txn : transactionRepository.findAll()) {
+            if (txn.getTransactionDate() != null) {
+                String label = YearMonth.from(txn.getTransactionDate()).format(formatter);
+                map.put(label, map.getOrDefault(label, 0L) + 1);
+            }
+        }
+        return map;
+    }
+
+    public Map<String, BigDecimal> getMonthlyVolume() {
+        TreeSet<YearMonth> months = new TreeSet<>();
+        int currentYear = LocalDate.now().getYear();
+        for (int m = 1; m <= 12; m++) {
+            months.add(YearMonth.of(currentYear, m));
+        }
+        for (Transaction txn : transactionRepository.findAll()) {
+            if (txn.getTransactionDate() != null) {
+                months.add(YearMonth.from(txn.getTransactionDate()));
+            }
+        }
+        Map<String, BigDecimal> map = new LinkedHashMap<>();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM yyyy", Locale.ENGLISH);
+        for (YearMonth ym : months) {
+            map.put(ym.format(formatter), BigDecimal.ZERO);
+        }
+        for (Transaction txn : transactionRepository.findAll()) {
+            if (txn.getTransactionDate() != null && txn.getAmount() != null) {
+                String label = YearMonth.from(txn.getTransactionDate()).format(formatter);
+                map.put(label, map.getOrDefault(label, BigDecimal.ZERO).add(txn.getAmount()));
+            }
+        }
+        return map;
+    }
+
+    public Map<String, Long> getYearlyTransactions() {
+        TreeSet<Integer> years = new TreeSet<>();
+        int currentYear = LocalDate.now().getYear();
+        for (int y = currentYear - 4; y <= currentYear; y++) {
+            years.add(y);
+        }
+        for (Transaction txn : transactionRepository.findAll()) {
+            if (txn.getTransactionDate() != null) {
+                years.add(txn.getTransactionDate().getYear());
+            }
+        }
+        Map<String, Long> map = new LinkedHashMap<>();
+        for (Integer y : years) {
+            map.put(String.valueOf(y), 0L);
+        }
+        for (Transaction txn : transactionRepository.findAll()) {
+            if (txn.getTransactionDate() != null) {
+                String label = String.valueOf(txn.getTransactionDate().getYear());
+                map.put(label, map.getOrDefault(label, 0L) + 1);
+            }
+        }
+        return map;
+    }
+
+    public Map<String, BigDecimal> getYearlyVolume() {
+        TreeSet<Integer> years = new TreeSet<>();
+        int currentYear = LocalDate.now().getYear();
+        for (int y = currentYear - 4; y <= currentYear; y++) {
+            years.add(y);
+        }
+        for (Transaction txn : transactionRepository.findAll()) {
+            if (txn.getTransactionDate() != null) {
+                years.add(txn.getTransactionDate().getYear());
+            }
+        }
+        Map<String, BigDecimal> map = new LinkedHashMap<>();
+        for (Integer y : years) {
+            map.put(String.valueOf(y), BigDecimal.ZERO);
+        }
+        for (Transaction txn : transactionRepository.findAll()) {
+            if (txn.getTransactionDate() != null && txn.getAmount() != null) {
+                String label = String.valueOf(txn.getTransactionDate().getYear());
+                map.put(label, map.getOrDefault(label, BigDecimal.ZERO).add(txn.getAmount()));
+            }
+        }
+        return map;
     }
     
     public List<TransactionResponseDTO> getAllTransactions() {
@@ -181,6 +357,10 @@ public class AdminService {
         dto.setRemarks(
                 transaction.getRemarks());
 
+        dto.setDisputeStatus(transaction.getDisputeStatus());
+        dto.setDisputeReason(transaction.getDisputeReason());
+        dto.setDisputeAdminRemark(transaction.getDisputeAdminRemark());
+
         return dto;
     }
     
@@ -194,6 +374,20 @@ public class AdminService {
 
         response.setDailyTransactions(
                 getDailyTransactions());
+        response.setDailyVolume(
+                getDailyVolume());
+        response.setWeeklyTransactions(
+                getWeeklyTransactions());
+        response.setWeeklyVolume(
+                getWeeklyVolume());
+        response.setMonthlyTransactions(
+                getMonthlyTransactions());
+        response.setMonthlyVolume(
+                getMonthlyVolume());
+        response.setYearlyTransactions(
+                getYearlyTransactions());
+        response.setYearlyVolume(
+                getYearlyVolume());
 
         response.setTotalTransactions(
                 transactionRepository.count());

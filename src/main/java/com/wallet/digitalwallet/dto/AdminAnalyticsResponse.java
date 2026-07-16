@@ -74,4 +74,69 @@ public class AdminAnalyticsResponse {
     public void setFailedTransactions(long failedTransactions) {
         this.failedTransactions = failedTransactions;
     }
+
+    private Map<String, BigDecimal> dailyVolume;
+    private Map<String, Long> monthlyTransactions;
+    private Map<String, BigDecimal> monthlyVolume;
+    private Map<String, Long> yearlyTransactions;
+    private Map<String, BigDecimal> yearlyVolume;
+
+    public Map<String, BigDecimal> getDailyVolume() {
+        return dailyVolume;
+    }
+
+    public void setDailyVolume(Map<String, BigDecimal> dailyVolume) {
+        this.dailyVolume = dailyVolume;
+    }
+
+    public Map<String, Long> getMonthlyTransactions() {
+        return monthlyTransactions;
+    }
+
+    public void setMonthlyTransactions(Map<String, Long> monthlyTransactions) {
+        this.monthlyTransactions = monthlyTransactions;
+    }
+
+    public Map<String, BigDecimal> getMonthlyVolume() {
+        return monthlyVolume;
+    }
+
+    public void setMonthlyVolume(Map<String, BigDecimal> monthlyVolume) {
+        this.monthlyVolume = monthlyVolume;
+    }
+
+    public Map<String, Long> getYearlyTransactions() {
+        return yearlyTransactions;
+    }
+
+    public void setYearlyTransactions(Map<String, Long> yearlyTransactions) {
+        this.yearlyTransactions = yearlyTransactions;
+    }
+
+    public Map<String, BigDecimal> getYearlyVolume() {
+        return yearlyVolume;
+    }
+
+    public void setYearlyVolume(Map<String, BigDecimal> yearlyVolume) {
+        this.yearlyVolume = yearlyVolume;
+    }
+
+    private Map<String, Long> weeklyTransactions;
+    private Map<String, BigDecimal> weeklyVolume;
+
+    public Map<String, Long> getWeeklyTransactions() {
+        return weeklyTransactions;
+    }
+
+    public void setWeeklyTransactions(Map<String, Long> weeklyTransactions) {
+        this.weeklyTransactions = weeklyTransactions;
+    }
+
+    public Map<String, BigDecimal> getWeeklyVolume() {
+        return weeklyVolume;
+    }
+
+    public void setWeeklyVolume(Map<String, BigDecimal> weeklyVolume) {
+        this.weeklyVolume = weeklyVolume;
+    }
 }

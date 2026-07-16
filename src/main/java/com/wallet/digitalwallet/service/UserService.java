@@ -51,10 +51,27 @@ public class UserService {
 
 	public UserResponseDTO registerUser(UserRequestDTO request) {
 
-		if (userRepository.existsByEmail(request.getEmail())) {
+		// If email exists but not verified → delete old record and re-register
+		userRepository.findByEmail(request.getEmail()).ifPresent(existingUser -> {
+			if (Boolean.FALSE.equals(existingUser.getEmailVerified())) {
+				walletRepository.findByUser_Id(existingUser.getId())
+						.ifPresent(walletRepository::delete);
+				userRepository.delete(existingUser);
+			} else {
+				throw new RuntimeException("EMAIL_EXISTS");
+			}
+		});
 
-			throw new RuntimeException("EMAIL_EXISTS");
-		}
+		// If mobile exists but not verified → delete old record
+		userRepository.findByMobileNumber(request.getMobileNumber()).ifPresent(existingUser -> {
+			if (Boolean.FALSE.equals(existingUser.getEmailVerified())) {
+				walletRepository.findByUser_Id(existingUser.getId())
+						.ifPresent(walletRepository::delete);
+				userRepository.delete(existingUser);
+			} else {
+				throw new RuntimeException("MOBILE_EXISTS");
+			}
+		});
 
 		if (userRepository.existsByMobileNumber(request.getMobileNumber())) {
 
@@ -120,7 +137,7 @@ public class UserService {
 
 		user.setOtpExpiry(
 		        LocalDateTime.now()
-		                .plusMinutes(5));
+		                .plusMinutes(30));
 
 		user.setEmailVerified(false);
 		try {
@@ -134,10 +151,13 @@ public class UserService {
 
 		} catch (Exception e) {
 
+		    System.err.println("=== EMAIL ERROR ===");
+		    System.err.println("Message : " + e.getMessage());
+		    System.err.println("Cause   : " + (e.getCause() != null ? e.getCause().getMessage() : "none"));
 		    e.printStackTrace();
 
 		    throw new RuntimeException(
-		            "EMAIL_SEND_FAILED");
+		            "EMAIL_SEND_FAILED: " + e.getMessage());
 		}
 		User savedUser = userRepository.save(user);
 
@@ -183,25 +203,20 @@ public class UserService {
 	public LoginResponse login(LoginRequest request) {
 
 		User user = userRepository.findByEmail(request.getEmail())
-				.orElseThrow(() -> new RuntimeException("Invalid Email"));
-		
-		if(Boolean.FALSE.equals(
-		        user.getEmailVerified())) {
-
-		    throw new RuntimeException(
-		            "EMAIL_NOT_VERIFIED");
-		}
+				.orElseThrow(() -> new RuntimeException("INVALID_CREDENTIALS"));
 
 		boolean matched = passwordEncoder.matches(request.getPassword(), user.getPassword());
 
-		if (user.getStatus() == Status.BLOCKED) {
-
-			throw new RuntimeException("Account Blocked");
+		if (!matched) {
+			throw new RuntimeException("INVALID_CREDENTIALS");
 		}
 
-		if (!matched) {
+		if (Boolean.FALSE.equals(user.getEmailVerified())) {
+			throw new RuntimeException("EMAIL_NOT_VERIFIED");
+		}
 
-		    throw new RuntimeException("Invalid Password");
+		if (user.getStatus() == Status.BLOCKED) {
+			throw new RuntimeException("Account Blocked");
 		}
 
 		LoginResponse response = new LoginResponse();
@@ -222,6 +237,9 @@ public class UserService {
 	public String deleteUser(Long id) {
 
 		User user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
+
+		// Delete wallet first to avoid FK constraint failure
+		walletRepository.findByUser_Id(id).ifPresent(walletRepository::delete);
 
 		userRepository.delete(user);
 
@@ -401,7 +419,7 @@ public class UserService {
 
 	    user.setOtpExpiry(
 	            LocalDateTime.now()
-	                    .plusMinutes(5));
+	                    .plusMinutes(30));
 
 	    userRepository.save(user);
 
@@ -437,8 +455,9 @@ public class UserService {
 
 	    userRepository.save(user);
 
-	    emailService.sendOtp(
+	    emailService.sendForgotPasswordOtp(
 	            user.getEmail(),
+	            user.getFullName(),
 	            otp);
 
 	    return "OTP_SENT";

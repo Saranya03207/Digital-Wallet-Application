@@ -17,10 +17,13 @@ public class SecurityConfig {
 
 	    http
 	        .csrf(csrf -> csrf.disable())
+	        .httpBasic(basic -> basic.disable())
 	        .authorizeHttpRequests(auth -> auth
 	            .requestMatchers(
 	                "/swagger-ui/**",
-	                "/v3/api-docs/**"
+	                "/v3/api-docs/**",
+	                "/test/**",
+	                "/users/**"
 	            ).permitAll()
 	            .anyRequest().permitAll()
 	        );
