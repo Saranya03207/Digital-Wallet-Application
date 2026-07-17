@@ -1,6 +1,8 @@
 package com.wallet.digitalwallet.service;
 
 import java.io.File;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.HttpEntity;
@@ -49,20 +51,15 @@ public class OcrService {
 
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                 String jsonBody = response.getBody();
-                
-                // Parse ParsedText from JSON
-                String searchKey = "\"ParsedText\":\"";
-                int startIndex = jsonBody.indexOf(searchKey);
-                if (startIndex != -1) {
-                    startIndex += searchKey.length();
-                    int endIndex = jsonBody.indexOf("\",\"ErrorMessage\"", startIndex);
-                    if (endIndex == -1) {
-                        endIndex = jsonBody.indexOf("\",\"ErrorDetails\"", startIndex);
-                    }
-                    if (endIndex != -1) {
-                        String rawText = jsonBody.substring(startIndex, endIndex);
-                        return rawText.replace("\\r\\n", "\n").replace("\\n", "\n").replace("\\/", "/");
-                    }
+                ObjectMapper mapper = new ObjectMapper();
+                JsonNode root = mapper.readTree(jsonBody);
+                JsonNode parsedResults = root.path("ParsedResults");
+                if (parsedResults.isArray() && parsedResults.size() > 0) {
+                    String rawText = parsedResults.get(0).path("ParsedText").asText();
+                    System.out.println("Clean ParsedText from OCR.space for file [" + imageFile.getName() + "]:\n" + rawText);
+                    return rawText;
+                } else {
+                    System.err.println("No ParsedResults in OCR.space response: " + jsonBody);
                 }
             }
         } catch (Exception e) {

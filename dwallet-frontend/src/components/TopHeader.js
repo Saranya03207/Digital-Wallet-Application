@@ -45,6 +45,7 @@ function TopHeader({ wallet }) {
       <nav style={{ display: "flex", gap: "4px" }}>
         {[
           { label: "Dashboard", path: "/dashboard" },
+          { label: "Rewards", path: "/rewards" },
           { label: "Banks", path: "/bank-accounts" },
           { label: "Wallet", path: "/wallet" },
           { label: "History", path: "/history" },

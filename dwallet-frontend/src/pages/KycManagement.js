@@ -24,8 +24,13 @@ function KycManagement() {
 
   async function handleAction(kycId, status) {
     try {
-      await API.post(`/kyc/admin/action?kycId=${kycId}&status=${status}`);
-      alert(`KYC Status successfully updated to: ${status}`);
+      let reason = "";
+      if (status === "REJECTED") {
+        reason = prompt("Enter rejection reason to email the user (optional):", "Documents unclear or details mismatched. Please upload clear front and back images.");
+        if (reason === null) return; // User canceled
+      }
+      await API.post(`/kyc/admin/action?kycId=${kycId}&status=${status}&reason=${encodeURIComponent(reason || "")}`);
+      alert(`KYC Status successfully updated to: ${status} ${status === "VERIFIED" || status === "REJECTED" ? "(Email notification sent to user!)" : ""}`);
       setSelectedKyc(null);
       loadRequests();
     } catch (err) {
@@ -142,13 +147,21 @@ function KycManagement() {
             </div>
 
             {/* Side-by-side photo comparison */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "24px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: selectedKyc.aadhaarBackImagePath ? "1fr 1fr 1fr" : "1fr 1fr", gap: "12px", marginBottom: "24px" }}>
               <div style={{ textAlign: "center" }}>
-                <p style={{ fontSize: "11px", fontWeight: 600, color: "#64748b", margin: "0 0 6px 0", textTransform: "uppercase" }}>Aadhaar Card</p>
+                <p style={{ fontSize: "11px", fontWeight: 600, color: "#64748b", margin: "0 0 6px 0", textTransform: "uppercase" }}>Aadhaar Front</p>
                 <div style={{ height: "130px", borderRadius: "12px", border: "1px solid #e2e8f0", overflow: "hidden", background: "#f8fafc" }}>
-                  <img src={`http://localhost:8080/kyc-images/${selectedKyc.aadhaarImagePath}`} alt="Aadhaar Document" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  <img src={`http://localhost:8080/kyc-images/${selectedKyc.aadhaarImagePath}`} alt="Aadhaar Front" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                 </div>
               </div>
+              {selectedKyc.aadhaarBackImagePath && (
+                <div style={{ textAlign: "center" }}>
+                  <p style={{ fontSize: "11px", fontWeight: 600, color: "#64748b", margin: "0 0 6px 0", textTransform: "uppercase" }}>Aadhaar Back</p>
+                  <div style={{ height: "130px", borderRadius: "12px", border: "1px solid #e2e8f0", overflow: "hidden", background: "#f8fafc" }}>
+                    <img src={`http://localhost:8080/kyc-images/${selectedKyc.aadhaarBackImagePath}`} alt="Aadhaar Back" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  </div>
+                </div>
+              )}
               <div style={{ textAlign: "center" }}>
                 <p style={{ fontSize: "11px", fontWeight: 600, color: "#64748b", margin: "0 0 6px 0", textTransform: "uppercase" }}>Captured Selfie</p>
                 <div style={{ height: "130px", borderRadius: "12px", border: "1px solid #e2e8f0", overflow: "hidden", background: "#f8fafc" }}>
@@ -181,7 +194,7 @@ function KycManagement() {
               ].map((item, idx) => (
                 <div key={idx} style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid #f1f5f9", paddingBottom: "8px", fontSize: "13px" }}>
                   <span style={{ color: "#64748b" }}>{item.label}</span>
-                  <span style={{ fontWeight: 600, color: "#0f172a" }}>{item.val}</span>
+                  <span style={{ fontWeight: 600, color: "#0f172a" }}>{item.val || "Not Found"}</span>
                 </div>
               ))}
             </div>

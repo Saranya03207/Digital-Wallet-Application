@@ -25,6 +25,7 @@ import FraudMonitor from "./pages/FraudMonitor";
 import KycVerification from "./pages/KycVerification";
 import KycManagement from "./pages/KycManagement";
 import AdminSupport from "./pages/AdminSupport";
+import Rewards from "./pages/Rewards";
 
 function App() {
   return (
@@ -75,6 +76,7 @@ function App() {
 
         <Route path="/admin/fraud"element={<FraudMonitor />}/>
         <Route path="/admin/support" element={<AdminSupport />} />
+        <Route path="/rewards" element={<ProtectedRoute><Rewards /></ProtectedRoute>} />
       </Routes>
     </BrowserRouter>
   );

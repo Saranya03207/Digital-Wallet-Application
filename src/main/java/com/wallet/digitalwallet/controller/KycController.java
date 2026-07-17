@@ -25,9 +25,10 @@ public class KycController {
     public ResponseEntity<?> submitKyc(
             @RequestParam("userId") Long userId,
             @RequestParam("aadhaar") MultipartFile aadhaar,
+            @RequestParam(value = "aadhaarBack", required = false) MultipartFile aadhaarBack,
             @RequestParam("selfie") MultipartFile selfie) {
         try {
-            Kyc kyc = kycService.submitKyc(userId, aadhaar, selfie);
+            Kyc kyc = kycService.submitKyc(userId, aadhaar, aadhaarBack, selfie);
             return ResponseEntity.ok(kyc);
         } catch (IOException e) {
             return ResponseEntity.badRequest().body("File upload failed: " + e.getMessage());
@@ -55,9 +56,10 @@ public class KycController {
     @PostMapping("/admin/action")
     public ResponseEntity<?> updateKycStatus(
             @RequestParam("kycId") Long kycId,
-            @RequestParam("status") KycStatus status) {
+            @RequestParam("status") KycStatus status,
+            @RequestParam(value = "reason", required = false) String reason) {
         try {
-            Kyc updatedKyc = kycService.updateKycStatus(kycId, status);
+            Kyc updatedKyc = kycService.updateKycStatus(kycId, status, reason);
             return ResponseEntity.ok(updatedKyc);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
@@ -65,9 +67,11 @@ public class KycController {
     }
 
     @PostMapping("/extract")
-    public ResponseEntity<?> extractOcrData(@RequestParam("aadhaar") MultipartFile aadhaar) {
+    public ResponseEntity<?> extractOcrData(
+            @RequestParam("aadhaar") MultipartFile aadhaar,
+            @RequestParam(value = "aadhaarBack", required = false) MultipartFile aadhaarBack) {
         try {
-            java.util.Map<String, String> data = kycService.extractOcrData(aadhaar);
+            java.util.Map<String, String> data = kycService.extractOcrData(aadhaar, aadhaarBack);
             return ResponseEntity.ok(data);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Failed to extract data: " + e.getMessage());

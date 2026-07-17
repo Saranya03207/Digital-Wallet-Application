@@ -7,12 +7,33 @@ function AdminSupport() {
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const formatDate = (dateVal) => {
+    if (!dateVal) return "Just Now";
+    try {
+      if (Array.isArray(dateVal)) {
+        const [year, month, day, hour = 0, minute = 0, second = 0] = dateVal;
+        return new Date(year, month - 1, day, hour, minute, second).toLocaleString();
+      }
+      const parsed = new Date(dateVal);
+      if (isNaN(parsed.getTime())) return "Just Now";
+      return parsed.toLocaleString();
+    } catch (e) {
+      return "Just Now";
+    }
+  };
+
   // Fetch support tickets
   const fetchTickets = async () => {
     try {
       const res = await API.get("/support/tickets");
       if (Array.isArray(res.data)) {
-        setTickets(res.data);
+        const sorted = [...res.data].sort((a, b) => {
+          if (b.id && a.id) return b.id - a.id;
+          const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          return timeB - timeA;
+        });
+        setTickets(sorted);
       }
       setLoading(false);
     } catch (err) {
@@ -169,7 +190,7 @@ function AdminSupport() {
                   <div style={{ display: "flex", gap: "16px", fontSize: "12.5px", color: "#64748b", flexWrap: "wrap" }}>
                     <span><strong>From:</strong> {ticket.fullName} ({ticket.email})</span>
                     <span><strong>Mobile:</strong> {ticket.mobileNumber || "N/A"}</span>
-                    <span><strong>Date:</strong> {ticket.createdAt ? new Date(ticket.createdAt).toLocaleString() : "Just Now"}</span>
+                    <span><strong>Date:</strong> {formatDate(ticket.createdAt)}</span>
                   </div>
 
                   {isPending && (

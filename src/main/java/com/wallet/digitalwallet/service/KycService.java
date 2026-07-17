@@ -32,10 +32,13 @@ public class KycService {
     @Autowired
     private OcrDataExtractor ocrDataExtractor;
 
+    @Autowired
+    private EmailService emailService;
+
     private final String uploadDir = System.getProperty("user.dir") + File.separator + "uploads" 
             + File.separator + "kyc" + File.separator;
 
-    public Kyc submitKyc(Long userId, MultipartFile aadhaarFile, MultipartFile selfieFile) throws IOException {
+    public Kyc submitKyc(Long userId, MultipartFile aadhaarFile, MultipartFile aadhaarBackFile, MultipartFile selfieFile) throws IOException {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -50,6 +53,14 @@ public class KycService {
         File aadhaarDest = new File(uploadDir + aadhaarFilename);
         aadhaarFile.transferTo(aadhaarDest);
 
+        String aadhaarBackFilename = null;
+        File aadhaarBackDest = null;
+        if (aadhaarBackFile != null && !aadhaarBackFile.isEmpty()) {
+            aadhaarBackFilename = System.currentTimeMillis() + "_aadhaar_back_" + aadhaarBackFile.getOriginalFilename();
+            aadhaarBackDest = new File(uploadDir + aadhaarBackFilename);
+            aadhaarBackFile.transferTo(aadhaarBackDest);
+        }
+
         String selfieFilename = System.currentTimeMillis() + "_selfie_" + selfieFile.getOriginalFilename();
         File selfieDest = new File(uploadDir + selfieFilename);
         selfieFile.transferTo(selfieDest);
@@ -59,6 +70,9 @@ public class KycService {
         kyc.setUser(user);
         kyc.setFullName(user.getFullName());
         kyc.setAadhaarImagePath(aadhaarFilename);
+        if (aadhaarBackFilename != null) {
+            kyc.setAadhaarBackImagePath(aadhaarBackFilename);
+        }
         kyc.setSelfieImagePath(selfieFilename);
         kyc.setCreatedAt(LocalDateTime.now());
 
@@ -71,8 +85,14 @@ public class KycService {
             kyc.setMaskedAadhaarNumber("XXXX XXXX 9999");
         }
 
-        // Extract text from the Aadhaar image using OCR API
+        // Extract text from both Front and Back images using OCR API
         String rawOcrText = ocrService.extractTextFromImage(aadhaarDest);
+        if (aadhaarBackDest != null) {
+            String backText = ocrService.extractTextFromImage(aadhaarBackDest);
+            if (backText != null && !backText.isEmpty()) {
+                rawOcrText = rawOcrText + "\n" + backText;
+            }
+        }
         System.out.println("Extracted OCR Text: " + rawOcrText);
         
         if (rawOcrText != null && !rawOcrText.isEmpty()) {
@@ -88,11 +108,16 @@ public class KycService {
             String pinCode = ocrDataExtractor.extractPinCode(rawOcrText);
             kyc.setPinCode(!"Not Found".equals(pinCode) ? pinCode : "600028");
             
-            kyc.setAddress((!"Not Found".equals(state) ? state : "Tamil Nadu") + ", India");
+            String extractedAddr = ocrDataExtractor.extractAddress(rawOcrText);
+            kyc.setAddress(!"Not Found".equals(extractedAddr) ? extractedAddr : (!"Not Found".equals(state) ? state : "Tamil Nadu") + ", India");
             
             String extractedAadhaar = ocrDataExtractor.extractAadhaarNumber(rawOcrText);
             if (!"Not Found".equals(extractedAadhaar)) {
                 kyc.setMaskedAadhaarNumber(extractedAadhaar);
+            }
+            String extractedName = ocrDataExtractor.extractName(rawOcrText);
+            if (!"Not Found".equals(extractedName)) {
+                kyc.setFullName(extractedName);
             }
         } else {
             kyc.setDob("15-08-1996");
@@ -107,24 +132,15 @@ public class KycService {
         score = Math.round(score * 100.0) / 100.0;
         kyc.setFaceMatchScore(score);
 
-        // Always assign VERIFIED for passing high score
-        kyc.setKycStatus(KycStatus.VERIFIED);
-        kyc.setVerifiedAt(LocalDateTime.now());
+        // Set to MANUAL_REVIEW so admin approval is actually required
+        kyc.setKycStatus(KycStatus.MANUAL_REVIEW);
+        kyc.setVerifiedAt(null);
 
         return kycRepository.save(kyc);
     }
 
     public Optional<Kyc> getKycByUserId(Long userId) {
-        Optional<Kyc> kycOpt = kycRepository.findByUser_Id(userId);
-        if (kycOpt.isPresent() && kycOpt.get().getKycStatus() == KycStatus.MANUAL_REVIEW) {
-            Kyc kyc = kycOpt.get();
-            kyc.setKycStatus(KycStatus.VERIFIED);
-            kyc.setFaceMatchScore(96.5);
-            kyc.setVerifiedAt(LocalDateTime.now());
-            kycRepository.save(kyc);
-            return Optional.of(kyc);
-        }
-        return kycOpt;
+        return kycRepository.findByUser_Id(userId);
     }
 
     public List<Kyc> getKycByStatus(KycStatus status) {
@@ -135,17 +151,36 @@ public class KycService {
         return kycRepository.findAll();
     }
 
-    public Kyc updateKycStatus(Long kycId, KycStatus status) {
+    public Kyc updateKycStatus(Long kycId, KycStatus status, String reason) {
         Kyc kyc = kycRepository.findById(kycId)
                 .orElseThrow(() -> new RuntimeException("KYC record not found"));
         kyc.setKycStatus(status);
         if (status == KycStatus.VERIFIED) {
             kyc.setVerifiedAt(LocalDateTime.now());
         }
-        return kycRepository.save(kyc);
+        Kyc savedKyc = kycRepository.save(kyc);
+
+        try {
+            User user = savedKyc.getUser();
+            if (user != null && user.getEmail() != null) {
+                if (status == KycStatus.VERIFIED) {
+                    emailService.sendKycApprovedMail(user.getEmail(), user.getFullName() != null ? user.getFullName() : "User");
+                } else if (status == KycStatus.REJECTED) {
+                    emailService.sendKycRejectedMail(user.getEmail(), user.getFullName() != null ? user.getFullName() : "User", reason);
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Failed to send KYC notification mail: " + e.getMessage());
+        }
+
+        return savedKyc;
     }
 
-    public java.util.Map<String, String> extractOcrData(MultipartFile aadhaarFile) throws IOException {
+    public Kyc updateKycStatus(Long kycId, KycStatus status) {
+        return updateKycStatus(kycId, status, null);
+    }
+
+    public java.util.Map<String, String> extractOcrData(MultipartFile aadhaarFile, MultipartFile aadhaarBackFile) throws IOException {
         File dir = new File(uploadDir);
         if (!dir.exists()) {
             dir.mkdirs();
@@ -156,6 +191,15 @@ public class KycService {
         aadhaarFile.transferTo(aadhaarDest);
 
         String rawOcrText = ocrService.extractTextFromImage(aadhaarDest);
+        if (aadhaarBackFile != null && !aadhaarBackFile.isEmpty()) {
+            String backFilename = System.currentTimeMillis() + "_extract_back_" + aadhaarBackFile.getOriginalFilename();
+            File backDest = new File(uploadDir + backFilename);
+            aadhaarBackFile.transferTo(backDest);
+            String backText = ocrService.extractTextFromImage(backDest);
+            if (backText != null && !backText.isEmpty()) {
+                rawOcrText = rawOcrText + "\n" + backText;
+            }
+        }
         System.out.println("Extracted OCR Text in extractOcrData: " + rawOcrText);
         java.util.Map<String, String> result = new java.util.HashMap<>();
         
@@ -172,7 +216,13 @@ public class KycService {
             String pinCode = ocrDataExtractor.extractPinCode(rawOcrText);
             result.put("pinCode", !"Not Found".equals(pinCode) ? pinCode : "600028");
             
-            result.put("address", (!"Not Found".equals(state) ? state : "Tamil Nadu") + ", India");
+            String extractedAddr = ocrDataExtractor.extractAddress(rawOcrText);
+            result.put("address", !"Not Found".equals(extractedAddr) ? extractedAddr : (!"Not Found".equals(state) ? state : "Tamil Nadu") + ", India");
+            
+            String extractedName = ocrDataExtractor.extractName(rawOcrText);
+            if (!"Not Found".equals(extractedName)) {
+                result.put("fullName", extractedName);
+            }
             
             String masked = ocrDataExtractor.extractAadhaarNumber(rawOcrText);
             result.put("maskedAadhaar", !"Not Found".equals(masked) ? masked : "XXXX XXXX " + (1000 + new Random().nextInt(9000)));

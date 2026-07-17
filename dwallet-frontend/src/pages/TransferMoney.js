@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import API from "../services/api";
 import TopHeader from "../components/TopHeader";
 
@@ -37,6 +37,7 @@ function TransferMoney() {
 
   const userId = localStorage.getItem("userId");
   const location = useLocation();
+  const navigate = useNavigate();
 
   // Load wallet, recent and frequent contacts on mount
   useEffect(() => {
@@ -44,9 +45,20 @@ function TransferMoney() {
     loadInitialData();
   }, [userId]);
 
-  // Handle QR Code Scan redirection from Dashboard
+  // Handle QR Code Scan redirection or Biller redirection
   useEffect(() => {
-    if (location.state?.scannedUpiId && userId) {
+    if (location.state?.isBiller && userId) {
+      const billerContact = {
+        id: "biller",
+        fullName: location.state.billerName,
+        upiId: location.state.billerNumber,
+        phone: location.state.billerNumber,
+        isBiller: true
+      };
+      setSelectedContact(billerContact);
+      setActiveView("CONVERSATION");
+      setTimeout(() => setShowBottomSheet(true), 350);
+    } else if (location.state?.scannedUpiId && userId) {
       const upi = location.state.scannedUpiId;
       API.get(`/wallet/contacts/search?keyword=${encodeURIComponent(upi)}&currentUserId=${userId}`)
         .then(res => {
@@ -162,6 +174,12 @@ function TransferMoney() {
 
   // Start Payment flow from bottom sheet -> PIN
   const handleProceedToPin = () => {
+    if (!wallet?.user?.transactionPin) {
+      if (window.confirm("⚠️ You have not set a UPI PIN yet. Would you like to go to your Profile to set up your 4-digit UPI PIN now?")) {
+        navigate("/profile");
+      }
+      return;
+    }
     if (!amount || Number(amount) <= 0) {
       alert("Please enter a valid amount");
       return;
@@ -189,51 +207,87 @@ function TransferMoney() {
 
     setTimeout(async () => {
       try {
-        const response = await API.post("/wallet/transfer", {
-          senderUserId: userId,
-          receiverUserId: selectedContact.userId,
-          amount: Number(amount),
-          transactionPin: transactionPin,
-          paymentNote: paymentNote || "UPI Transfer",
-          conversationId: `conv_${Math.min(userId, selectedContact.userId)}_${Math.max(userId, selectedContact.userId)}`
-        });
-
-        if (response.data && typeof response.data === "string" && response.data !== "Transfer Successful" && !response.data.includes("Successful")) {
-          setAiStatus("IDLE");
-          setLoading(false);
-          if (response.data.includes("Invalid Transaction PIN")) {
-            setPinError("❌ Incorrect PIN. Please try again.");
-          } else if (response.data.includes("KYC_NOT_VERIFIED")) {
-            alert("❌ Your KYC verification is pending. Redirecting you to complete KYC Verification now!");
-            setShowPinModal(false);
-            window.location.href = "/kyc-verification";
+        if (selectedContact?.isBiller) {
+          // Handle Bill Payment via Withdraw logic to deduct wallet balance securely
+          const payload = {
+            userId: Number(userId),
+            amount: Number(amount),
+            selectedBank: `Bill Pay: ${selectedContact.fullName}`,
+            transactionPin: transactionPin
+          };
+          const res = await API.post("/wallet/withdraw", payload);
+          if (res.data === "Withdrawal successful") {
+            setAiStatus("SUCCESS");
+            setTimeout(() => {
+              const newMsg = {
+                senderId: Number(userId),
+                receiverId: "biller",
+                message: paymentNote || `Paid for ${selectedContact.fullName}`,
+                amount: Number(amount),
+                timestamp: new Date().toISOString()
+              };
+              setConversationHistory([...conversationHistory, newMsg]);
+              setAmount("");
+              setPaymentNote("");
+              setTransactionPin("");
+              setShowPinModal(false);
+              setShowBottomSheet(false);
+              setAiStatus("IDLE");
+              loadInitialData(); // Refresh wallet balance
+            }, 1500);
           } else {
-            setPinError(`❌ ${response.data}`);
-            alert(`🚫 Transfer Rejected: ${response.data}`);
+            setPinError(res.data);
+            setAiStatus("IDLE");
+            setLoading(false);
           }
-          return;
-        }
+        } else {
+          // Regular P2P Transfer
+          const response = await API.post("/wallet/transfer", {
+            senderUserId: userId,
+            receiverUserId: selectedContact.userId,
+            amount: Number(amount),
+            transactionPin: transactionPin,
+            paymentNote: paymentNote || "UPI Transfer",
+            conversationId: `conv_${Math.min(userId, selectedContact.userId)}_${Math.max(userId, selectedContact.userId)}`
+          });
 
-        setAiStatus("SUCCESS");
-        setTimeout(async () => {
-          setShowPinModal(false);
-          setLoading(false);
-          
-          // Refresh conversation details & inject bubble automatically
-          try {
-            const res = await API.get(`/wallet/contacts/conversation/${userId}/${selectedContact.userId}`);
-            if (res.data) {
-              setConversationHistory(res.data.history || []);
-              setSelectedContact(res.data.contact || selectedContact);
+          if (response.data && typeof response.data === "string" && response.data !== "Transfer Successful" && !response.data.includes("Successful")) {
+            setAiStatus("IDLE");
+            setLoading(false);
+            if (response.data.includes("Invalid Transaction PIN")) {
+              setPinError("❌ Incorrect PIN. Please try again.");
+            } else if (response.data.includes("KYC_NOT_VERIFIED")) {
+              alert("❌ Your KYC verification is pending. Redirecting you to complete KYC Verification now!");
+              setShowPinModal(false);
+              window.location.href = "/kyc-verification";
+            } else {
+              setPinError(`❌ ${response.data}`);
+              alert(`🚫 Transfer Rejected: ${response.data}`);
             }
-          } catch (e) { console.log(e); }
+            return;
+          }
 
-          // Refresh wallet balance & contacts silently
-          loadInitialData();
-          setAmount("");
-          setPaymentNote("");
-          setTransactionPin("");
-        }, 1000);
+          setAiStatus("SUCCESS");
+          setTimeout(async () => {
+            setShowPinModal(false);
+            setLoading(false);
+            
+            // Refresh conversation details & inject bubble automatically
+            try {
+              const res = await API.get(`/wallet/contacts/conversation/${userId}/${selectedContact.userId}`);
+              if (res.data) {
+                setConversationHistory(res.data.history || []);
+                setSelectedContact(res.data.contact || selectedContact);
+              }
+            } catch (e) { console.log(e); }
+
+            // Refresh wallet balance & contacts silently
+            loadInitialData();
+            setAmount("");
+            setPaymentNote("");
+            setTransactionPin("");
+          }, 1000);
+        }
 
       } catch (error) {
         console.log(error);
@@ -245,6 +299,12 @@ function TransferMoney() {
   };
 
   const handleCheckBalance = () => {
+    if (!wallet?.user?.transactionPin) {
+      if (window.confirm("⚠️ You have not set a UPI PIN yet. Would you like to go to your Profile to set up your 4-digit UPI PIN now?")) {
+        navigate("/profile");
+      }
+      return;
+    }
     if (showBalance) {
       setShowBalance(false);
     } else {

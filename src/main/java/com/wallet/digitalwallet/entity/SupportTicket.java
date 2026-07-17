@@ -26,8 +26,16 @@ public class SupportTicket {
     private String message;
     private String status = "PENDING"; // PENDING, RESOLVED
 
-    @Column(name = "created_at", insertable = false, updatable = false)
+    @com.fasterxml.jackson.annotation.JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+    @Column(name = "created_at")
     private LocalDateTime createdAt;
+
+    @PrePersist
+    protected void onCreate() {
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
+    }
 
     // Getters and Setters
     public Long getId() {
@@ -95,7 +103,7 @@ public class SupportTicket {
     }
 
     public LocalDateTime getCreatedAt() {
-        return createdAt;
+        return createdAt != null ? createdAt : LocalDateTime.now();
     }
 
     public void setCreatedAt(LocalDateTime createdAt) {

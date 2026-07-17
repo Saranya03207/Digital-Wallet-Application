@@ -312,7 +312,18 @@ public class WalletService {
         transactionRepository.save(transaction);
 
         autoInvestigationService.investigate(transaction);
-        
+
+        // ==============================
+        // Award Reward Points to Sender
+        // 1 point per ₹10 transferred
+        // ==============================
+        int pointsEarned = request.getAmount().intValue() / 10;
+        if (pointsEarned > 0) {
+            int current = sender.getRewardPoints() != null ? sender.getRewardPoints() : 0;
+            sender.setRewardPoints(current + pointsEarned);
+            userRepository.save(sender);
+        }
+
         // Update conversation record
         String lastMsg = (note != null && !note.trim().isEmpty()) ? "Paid ₹" + request.getAmount() + " • " + note.trim() : "Paid ₹" + request.getAmount();
         conversationService.updateOrCreateConversation(request.getSenderUserId(), request.getReceiverUserId(), lastMsg, request.getAmount());

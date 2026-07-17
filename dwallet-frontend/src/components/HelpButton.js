@@ -28,6 +28,12 @@ function HelpButton() {
           fullName: uName
         });
         if (!ticketName) setTicketName(uName);
+        API.get(`/wallet/details/${uId}`).then(res => {
+          if (res.data?.user) {
+            if (!ticketEmail) setTicketEmail(res.data.user.email || "");
+            if (!ticketMobile) setTicketMobile(res.data.user.mobileNumber || "");
+          }
+        }).catch(err => console.log(err));
       }
     } catch (e) {
       console.error(e);

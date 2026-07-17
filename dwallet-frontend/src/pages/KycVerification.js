@@ -10,6 +10,8 @@ function KycVerification() {
   const [step, setStep] = useState(1);
   const [aadhaarFile, setAadhaarFile] = useState(null);
   const [aadhaarPreview, setAadhaarPreview] = useState(null);
+  const [aadhaarBackFile, setAadhaarBackFile] = useState(null);
+  const [aadhaarBackPreview, setAadhaarBackPreview] = useState(null);
   const [ocrDetails, setOcrDetails] = useState(null);
   
   const [selfieCaptured, setSelfieCaptured] = useState(false);
@@ -43,6 +45,21 @@ function KycVerification() {
     setAadhaarPreview(URL.createObjectURL(file));
   };
 
+  const handleBackFileChange = (file) => {
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      alert("Maximum file size allowed is 10 MB");
+      return;
+    }
+    const validTypes = ["image/jpeg", "image/jpg", "image/png"];
+    if (!validTypes.includes(file.type)) {
+      alert("Supported formats are JPG, PNG, JPEG");
+      return;
+    }
+    setAadhaarBackFile(file);
+    setAadhaarBackPreview(URL.createObjectURL(file));
+  };
+
   const handleDragOver = (e) => {
     e.preventDefault();
     setIsDragOver(true);
@@ -55,9 +72,18 @@ function KycVerification() {
   const handleDrop = (e) => {
     e.preventDefault();
     setIsDragOver(false);
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       handleFileChange(e.dataTransfer.files[0]);
+      if (e.dataTransfer.files[1]) {
+        handleBackFileChange(e.dataTransfer.files[1]);
+      }
     }
+  };
+
+  const handleBothFilesChange = (files) => {
+    if (!files || files.length === 0) return;
+    if (files[0]) handleFileChange(files[0]);
+    if (files[1]) handleBackFileChange(files[1]);
   };
 
   // Call Backend OCR Extraction
@@ -69,13 +95,16 @@ function KycVerification() {
     try {
       const formData = new FormData();
       formData.append("aadhaar", aadhaarFile);
+      if (aadhaarBackFile) {
+        formData.append("aadhaarBack", aadhaarBackFile);
+      }
       const response = await API.post("/kyc/extract", formData, {
         headers: { "Content-Type": "multipart/form-data" }
       });
       
       const data = response.data;
       setOcrDetails({
-        fullName: localStorage.getItem("username") || "Card Holder",
+        fullName: data.fullName || localStorage.getItem("username") || "Card Holder",
         maskedAadhaar: data.maskedAadhaar && data.maskedAadhaar !== "Not Found" ? data.maskedAadhaar : "XXXX XXXX " + (Math.floor(1000 + Math.random() * 9000)),
         dob: data.dob || "Not Found",
         gender: data.gender || "Not Found",
@@ -164,6 +193,9 @@ function KycVerification() {
     const formData = new FormData();
     formData.append("userId", userId);
     formData.append("aadhaar", aadhaarFile);
+    if (aadhaarBackFile) {
+      formData.append("aadhaarBack", aadhaarBackFile);
+    }
     formData.append("selfie", new File([selfieBlob], "selfie.jpg", { type: "image/jpeg" }));
 
     try {
@@ -231,34 +263,76 @@ function KycVerification() {
             {step === 1 && (
               <div style={{ background: "rgba(255,255,255,0.05)", borderRadius: "24px", padding: "40px", border: "1px solid rgba(255,255,255,0.1)" }}>
                 <h2 style={{ fontSize: "24px", fontWeight: 800, marginBottom: "8px" }}>Identity Verification</h2>
-                <p style={{ color: "rgba(255,255,255,0.6)", fontSize: "14px", marginBottom: "32px" }}>Drag and drop or select your Aadhaar card file to start extraction.</p>
+                <p style={{ color: "rgba(255,255,255,0.6)", fontSize: "14px", marginBottom: "28px" }}>Upload both sides of your Aadhaar card for complete OCR extraction.</p>
                 
-                <div 
-                  onDragOver={handleDragOver}
-                  onDragLeave={handleDragLeave}
-                  onDrop={handleDrop}
-                  style={{
-                    border: isDragOver ? "2px dashed #6366f1" : "2px dashed rgba(255,255,255,0.2)",
-                    borderRadius: "16px", padding: "40px 20px", textAlign: "center", background: isDragOver ? "rgba(99,102,241,0.08)" : "transparent",
-                    transition: "all 0.2s ease", cursor: "pointer", marginBottom: "30px"
-                  }}
-                  onClick={() => document.getElementById("aadhaar-input").click()}
-                >
-                  <input type="file" id="aadhaar-input" accept="image/*" onChange={(e) => handleFileChange(e.target.files[0])} style={{ display: "none" }} />
-                  <div style={{ display: "flex", justifyContent: "center", marginBottom: "16px" }}><ScanIcon size={40} color="rgba(255,255,255,0.7)" /></div>
-                  <h4 style={{ fontSize: "16px", margin: "0 0 6px 0" }}>Drag & Drop Aadhaar Card</h4>
-                  <p style={{ color: "rgba(255,255,255,0.4)", fontSize: "12px", margin: 0 }}>Supported formats: JPG, PNG, JPEG (Max size: 10MB)</p>
+                {/* Combined Multi-File Upload Tip */}
+                <div style={{ background: "rgba(99,102,241,0.12)", border: "1px solid rgba(99,102,241,0.3)", borderRadius: "16px", padding: "16px 20px", marginBottom: "24px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }}>
+                  <div>
+                    <p style={{ margin: "0 0 4px 0", fontSize: "14px", fontWeight: 700, color: "white" }}>💡 Quick Upload Both Sides</p>
+                    <p style={{ margin: 0, fontSize: "12px", color: "rgba(255,255,255,0.7)" }}>Drag & drop both Front and Back photos here, or select both images simultaneously.</p>
+                  </div>
+                  <button type="button" onClick={() => document.getElementById("aadhaar-both-input").click()} style={{ padding: "10px 18px", borderRadius: "10px", background: "linear-gradient(135deg,#6366f1,#8b5cf6)", color: "white", border: "none", fontWeight: 700, fontSize: "13px", cursor: "pointer", boxShadow: "0 4px 12px rgba(99,102,241,0.3)" }}>
+                    Select Both Files
+                  </button>
+                  <input type="file" id="aadhaar-both-input" accept="image/*" multiple onChange={(e) => handleBothFilesChange(e.target.files)} style={{ display: "none" }} />
                 </div>
 
-                {aadhaarPreview && (
-                  <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: "14px", padding: "16px", display: "flex", alignItems: "center", gap: "16px", marginBottom: "30px" }}>
-                    <img src={aadhaarPreview} alt="Aadhaar preview" style={{ width: "80px", height: "50px", objectFit: "cover", borderRadius: "6px" }} />
-                    <div style={{ flex: 1, overflow: "hidden" }}>
-                      <p style={{ margin: "0 0 4px 0", fontSize: "14px", fontWeight: 600, textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }}>{aadhaarFile.name}</p>
-                      <p style={{ margin: 0, fontSize: "11px", color: "rgba(255,255,255,0.4)" }}>{(aadhaarFile.size / (1024 * 1024)).toFixed(2)} MB</p>
-                    </div>
+                {/* Front Side Box */}
+                <div style={{ marginBottom: "20px" }}>
+                  <label style={{ fontSize: "13px", fontWeight: 600, color: "rgba(255,255,255,0.8)", marginBottom: "8px", display: "block" }}>1. Aadhaar Card Front (Photo, DOB, Name) *</label>
+                  <div 
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                    style={{
+                      border: isDragOver ? "2px dashed #6366f1" : "2px dashed rgba(255,255,255,0.2)",
+                      borderRadius: "14px", padding: "24px 16px", textAlign: "center", background: isDragOver ? "rgba(99,102,241,0.08)" : "rgba(255,255,255,0.02)",
+                      transition: "all 0.2s ease", cursor: "pointer"
+                    }}
+                    onClick={() => document.getElementById("aadhaar-input").click()}
+                  >
+                    <input type="file" id="aadhaar-input" accept="image/*" multiple onChange={(e) => handleBothFilesChange(e.target.files)} style={{ display: "none" }} />
+                    <div style={{ display: "flex", justifyContent: "center", marginBottom: "10px" }}><ScanIcon size={32} color="rgba(255,255,255,0.7)" /></div>
+                    <h4 style={{ fontSize: "14px", margin: "0 0 4px 0" }}>{aadhaarFile ? aadhaarFile.name : "Click to select Front Side (or both)"}</h4>
+                    <p style={{ color: "rgba(255,255,255,0.4)", fontSize: "11px", margin: 0 }}>Supported: JPG, PNG (Max 10MB)</p>
                   </div>
-                )}
+                  {aadhaarPreview && (
+                    <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: "10px", padding: "10px 14px", display: "flex", alignItems: "center", gap: "12px", marginTop: "10px" }}>
+                      <img src={aadhaarPreview} alt="Front preview" style={{ width: "60px", height: "38px", objectFit: "cover", borderRadius: "4px" }} />
+                      <div style={{ flex: 1, overflow: "hidden" }}>
+                        <p style={{ margin: "0 0 2px 0", fontSize: "13px", fontWeight: 600, textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }}>{aadhaarFile.name}</p>
+                        <span style={{ fontSize: "11px", color: "#10b981", fontWeight: 600 }}>✓ Front Side Loaded</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Back Side Box */}
+                <div style={{ marginBottom: "28px" }}>
+                  <label style={{ fontSize: "13px", fontWeight: 600, color: "rgba(255,255,255,0.8)", marginBottom: "8px", display: "block" }}>2. Aadhaar Card Back (Address, PIN Code) (Recommended)</label>
+                  <div 
+                    style={{
+                      border: "2px dashed rgba(255,255,255,0.2)",
+                      borderRadius: "14px", padding: "24px 16px", textAlign: "center", background: "rgba(255,255,255,0.02)",
+                      transition: "all 0.2s ease", cursor: "pointer"
+                    }}
+                    onClick={() => document.getElementById("aadhaar-back-input").click()}
+                  >
+                    <input type="file" id="aadhaar-back-input" accept="image/*" onChange={(e) => handleBackFileChange(e.target.files[0])} style={{ display: "none" }} />
+                    <div style={{ display: "flex", justifyContent: "center", marginBottom: "10px" }}><ScanIcon size={32} color="rgba(255,255,255,0.7)" /></div>
+                    <h4 style={{ fontSize: "14px", margin: "0 0 4px 0" }}>{aadhaarBackFile ? aadhaarBackFile.name : "Click to select Back Side"}</h4>
+                    <p style={{ color: "rgba(255,255,255,0.4)", fontSize: "11px", margin: 0 }}>Supported: JPG, PNG (Max 10MB)</p>
+                  </div>
+                  {aadhaarBackPreview && (
+                    <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: "10px", padding: "10px 14px", display: "flex", alignItems: "center", gap: "12px", marginTop: "10px" }}>
+                      <img src={aadhaarBackPreview} alt="Back preview" style={{ width: "60px", height: "38px", objectFit: "cover", borderRadius: "4px" }} />
+                      <div style={{ flex: 1, overflow: "hidden" }}>
+                        <p style={{ margin: "0 0 2px 0", fontSize: "13px", fontWeight: 600, textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }}>{aadhaarBackFile.name}</p>
+                        <span style={{ fontSize: "11px", color: "#10b981", fontWeight: 600 }}>✓ Back Side Loaded</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
 
                 <button onClick={startOcr} disabled={!aadhaarFile} style={{
                   width: "100%", padding: "15px", borderRadius: "12px", border: "none",

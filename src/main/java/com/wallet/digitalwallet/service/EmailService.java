@@ -97,6 +97,37 @@ public class EmailService {
                 buildTransactionHtml(body, "DEBIT", "Money Sent", "#2563eb", "#dbeafe", "#1d4ed8", "📤"));
     }
 
+    // ─────────────────────────────────────────────────────
+    //  7. KYC APPROVED
+    // ─────────────────────────────────────────────────────
+    public void sendKycApprovedMail(String email, String name) {
+        String now = LocalDateTime.now().format(FORMATTER);
+        sendHtmlMail(email, "WalletPay KYC Team", "🎉 Your KYC Verification is Approved!",
+                buildStatusNotificationHtml(
+                        "🎉", "KYC Verification Approved",
+                        "Hi <strong>" + name + "</strong>, your Aadhaar KYC documents have been reviewed and <strong>verified successfully</strong>.",
+                        new String[][]{{"Status", "VERIFIED"}, {"Verification Date", now}, {"Daily Limit", "₹1,00,000"}},
+                        "ℹ️ Good News",
+                        "You now have full access to higher transaction limits and all WalletPay premium features.",
+                        "#16a34a", "#f0fdf4"));
+    }
+
+    // ─────────────────────────────────────────────────────
+    //  8. KYC REJECTED
+    // ─────────────────────────────────────────────────────
+    public void sendKycRejectedMail(String email, String name, String reason) {
+        String now = LocalDateTime.now().format(FORMATTER);
+        String reasonText = (reason != null && !reason.trim().isEmpty()) ? reason : "Documents unclear or details mismatched. Please upload clear front and back images.";
+        sendHtmlMail(email, "WalletPay KYC Team", "❌ KYC Verification Rejected - Please Try Again",
+                buildStatusNotificationHtml(
+                        "⚠️", "KYC Verification Rejected",
+                        "Hi <strong>" + name + "</strong>, unfortunately your Aadhaar KYC verification could not be approved.",
+                        new String[][]{{"Status", "REJECTED"}, {"Reason", reasonText}, {"Reviewed On", now}},
+                        "👉 Action Required",
+                        "Please log in to WalletPay, navigate to KYC Verification, and upload clear, readable Aadhaar front and back images.",
+                        "#dc2626", "#fef2f2"));
+    }
+
     // ═══════════════════════════════════════════════════════
     //  PRIVATE SENDER
     // ═══════════════════════════════════════════════════════
@@ -190,6 +221,43 @@ public class EmailService {
             "padding:14px 18px;text-align:left;margin-bottom:20px;'>" +
             "<p style='color:" + alertColor + ";font-size:13px;margin:0;'>" +
             "<strong>🚨 Not You?</strong> " + warning + "</p>" +
+            "</div>" +
+            "</td></tr>" +
+            footer()
+        );
+    }
+
+    private String buildStatusNotificationHtml(String icon, String title, String subtitle,
+                                               String[][] details, String tipTitle, String tipText,
+                                               String accentColor, String accentBg) {
+        StringBuilder detailRows = new StringBuilder();
+        for (String[] row : details) {
+            detailRows.append(
+                "<tr>" +
+                "<td style='padding:10px 16px;color:#64748b;font-size:13px;border-bottom:1px solid #f1f5f9;width:40%;'>" + row[0] + "</td>" +
+                "<td style='padding:10px 16px;color:#1e293b;font-size:13px;font-weight:600;border-bottom:1px solid #f1f5f9;'>" + row[1] + "</td>" +
+                "</tr>"
+            );
+        }
+
+        return wrap(
+            header("#1e3a5f", "#2563eb") +
+
+            "<tr><td style='padding:36px 40px 20px 40px;text-align:center;'>" +
+            "<div style='font-size:52px;margin-bottom:12px;'>" + icon + "</div>" +
+            "<h2 style='color:#1e293b;font-size:21px;font-weight:700;margin:0 0 10px 0;'>" + title + "</h2>" +
+            "<p style='color:#64748b;font-size:14px;margin:0 0 28px 0;line-height:1.7;'>" + subtitle + "</p>" +
+
+            // Details Table
+            "<div style='background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;margin-bottom:24px;text-align:left;'>" +
+            "<table width='100%' cellpadding='0' cellspacing='0'>" + detailRows + "</table>" +
+            "</div>" +
+
+            // Tip/Action Box
+            "<div style='background:" + accentBg + ";border-left:4px solid " + accentColor + ";border-radius:8px;" +
+            "padding:14px 18px;text-align:left;margin-bottom:20px;'>" +
+            "<p style='color:" + accentColor + ";font-size:13px;margin:0;'>" +
+            "<strong>" + tipTitle + ":</strong> " + tipText + "</p>" +
             "</div>" +
             "</td></tr>" +
             footer()

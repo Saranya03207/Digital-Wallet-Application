@@ -230,6 +230,26 @@ function History() {
                       </div>
 
                       <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                        {/* Download Receipt */}
+                        <button
+                          onClick={async () => {
+                            try {
+                              const userId = localStorage.getItem("userId");
+                              const res = await fetch(`http://localhost:8080/wallet/receipt/${tx.transactionId}?userId=${userId}`);
+                              if (!res.ok) throw new Error("Failed");
+                              const blob = await res.blob();
+                              const url = window.URL.createObjectURL(blob);
+                              const a = document.createElement("a");
+                              a.href = url;
+                              a.download = `Receipt_${tx.upiTransactionId || tx.transactionId}.pdf`;
+                              a.click();
+                              window.URL.revokeObjectURL(url);
+                            } catch (e) { alert("Could not download receipt."); }
+                          }}
+                          style={{ padding: "6px 14px", borderRadius: "10px", background: "#eff6ff", color: "#2563eb", border: "1px solid #bfdbfe", fontWeight: 700, fontSize: "12px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
+                          🧾 Receipt
+                        </button>
+
                         {tx.disputeStatus && tx.disputeStatus !== "NONE" ? (
                           <span style={{
                             padding: "5px 12px", borderRadius: "20px", fontSize: "12px", fontWeight: 700,

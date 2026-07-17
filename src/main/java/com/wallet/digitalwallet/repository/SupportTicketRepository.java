@@ -8,4 +8,5 @@ import java.util.List;
 @Repository
 public interface SupportTicketRepository extends JpaRepository<SupportTicket, Long> {
     List<SupportTicket> findAllByOrderByCreatedAtDesc();
+    List<SupportTicket> findAllByOrderByIdDesc();
 }

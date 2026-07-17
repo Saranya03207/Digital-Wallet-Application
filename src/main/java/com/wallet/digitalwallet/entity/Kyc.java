@@ -33,6 +33,9 @@ public class Kyc {
     @Column(name = "aadhaar_image_path")
     private String aadhaarImagePath;
 
+    @Column(name = "aadhaar_back_image_path")
+    private String aadhaarBackImagePath;
+
     @Column(name = "selfie_image_path")
     private String selfieImagePath;
 
@@ -130,6 +133,14 @@ public class Kyc {
 
     public void setAadhaarImagePath(String aadhaarImagePath) {
         this.aadhaarImagePath = aadhaarImagePath;
+    }
+
+    public String getAadhaarBackImagePath() {
+        return aadhaarBackImagePath;
+    }
+
+    public void setAadhaarBackImagePath(String aadhaarBackImagePath) {
+        this.aadhaarBackImagePath = aadhaarBackImagePath;
     }
 
     public String getSelfieImagePath() {

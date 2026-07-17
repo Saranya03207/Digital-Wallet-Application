@@ -41,7 +41,7 @@ public class SupportTicketController {
     // Admin endpoint: Get all support tickets
     @GetMapping("/support/tickets")
     public List<SupportTicket> getAllTickets() {
-        return supportTicketRepository.findAllByOrderByCreatedAtDesc();
+        return supportTicketRepository.findAllByOrderByIdDesc();
     }
 
     // Admin endpoint: Resolve a support ticket
@@ -67,7 +67,7 @@ public class SupportTicketController {
             userRepository.save(user);
             
             // Also resolve any pending tickets for this user
-            List<SupportTicket> tickets = supportTicketRepository.findAllByOrderByCreatedAtDesc();
+            List<SupportTicket> tickets = supportTicketRepository.findAllByOrderByIdDesc();
             for (SupportTicket ticket : tickets) {
                 if (userId.equals(ticket.getUserId()) && "PENDING".equals(ticket.getStatus())) {
                     ticket.setStatus("RESOLVED");

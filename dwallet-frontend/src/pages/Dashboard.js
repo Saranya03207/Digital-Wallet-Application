@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import API from "../services/api";
 import TopHeader from "../components/TopHeader";
 import HelpButton from "../components/HelpButton";
-import { ScanIcon, TransferIcon, HistoryIcon, ProfileIcon, BellIcon, QrIcon, EyeIcon, EyeOffIcon, ShieldIcon, DownloadIcon, ShareIcon, WalletIcon, PlusIcon, CameraIcon } from "../components/AppIcons";
+import { ScanIcon, TransferIcon, HistoryIcon, ProfileIcon, BellIcon, QrIcon, EyeIcon, EyeOffIcon, ShieldIcon, DownloadIcon, ShareIcon, WalletIcon, PlusIcon, CameraIcon, CheckIcon, XCircleIcon, AlertTriangleIcon, CheckCircleIcon, SparklesIcon } from "../components/AppIcons";
 import { QRCodeSVG, getJsQR } from "../components/QRHelper";
 
 function Dashboard() {
@@ -20,6 +20,8 @@ function Dashboard() {
   const [recentContacts, setRecentContacts] = useState([]);
   const [scanning, setScanning] = useState(false);
   const [scanError, setScanError] = useState("");
+  const [scannedUpi, setScannedUpi] = useState(null);
+  const [rewardPoints, setRewardPoints] = useState(0);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const scanIntervalRef = useRef(null);
@@ -74,6 +76,10 @@ function Dashboard() {
 
     API.get(`/wallet/contacts/recent?userId=${userId}`)
       .then(res => setRecentContacts(res.data || []))
+      .catch(err => console.log(err));
+
+    API.get(`/rewards/${userId}`)
+      .then(res => setRewardPoints(res.data?.points || 0))
       .catch(err => console.log(err));
   }, [navigate]);
 
@@ -199,16 +205,15 @@ function Dashboard() {
     } else if (qrText.startsWith("upi://")) {
       upiId = qrText.replace("upi://", "");
     }
-    alert(`✅ QR Code Scanned Successfully!\nUPI ID: ${upiId}\nRedirecting to transfer...`);
-    navigate("/transfer", { state: { scannedUpiId: upiId } });
+    setShowScanModal(false);
+    stopCameraScan();
+    setScannedUpi(upiId);
   };
 
   const quickActions = [
-    { icon: <ScanIcon size={26} color="white" />, label: "Scan QR", sub: "Scan & Pay", path: "ACTION_SCAN", color: "#0ea5e9", bg: "linear-gradient(135deg,#0ea5e9,#38bdf8)" },
-    { icon: <TransferIcon size={26} color="white" />, label: "Transfer", sub: "Send to anyone", path: "/transfer", color: "#f97316", bg: "linear-gradient(135deg,#f97316,#fb923c)" },
-    { icon: <HistoryIcon size={26} color="white" />, label: "History", sub: "All transactions", path: "/history", color: "#7c3aed", bg: "linear-gradient(135deg,#7c3aed,#a855f7)" },
-    { icon: <ProfileIcon size={26} color="white" />, label: "Profile", sub: "Manage account", path: "/profile", color: "#6366f1", bg: "linear-gradient(135deg,#6366f1,#8b5cf6)" },
-    { icon: <BellIcon size={26} color="white" />, label: "Alerts", sub: "Notifications", path: "/notifications", color: "#10b981", bg: "linear-gradient(135deg,#10b981,#34d399)" },
+    { icon: <TransferIcon size={28} color="white" />, label: "Transfer", sub: "Send to anyone", path: "/transfer", color: "#f97316", bg: "linear-gradient(135deg,#f97316,#fb923c)" },
+    { icon: <ScanIcon size={28} color="white" />, label: "Scan QR", sub: "Scan & Pay", path: "ACTION_SCAN", color: "#0ea5e9", bg: "linear-gradient(135deg,#0ea5e9,#38bdf8)" },
+    { icon: <HistoryIcon size={28} color="white" />, label: "History", sub: "All transactions", path: "/history", color: "#7c3aed", bg: "linear-gradient(135deg,#7c3aed,#a855f7)" },
   ];
 
   const handleActionClick = (path) => {
@@ -266,8 +271,8 @@ function Dashboard() {
               alignItems: "center", boxShadow: "0 10px 30px rgba(0,0,0,0.06)", border: "1px solid rgba(0,0,0,0.02)"
             }}>
               <div>
-                <h3 style={{ margin: "0 0 4px 0", color: kyc.kycStatus === "REJECTED" ? "#991b1b" : "#92400e", fontSize: "16px", fontWeight: 800 }}>
-                  {kyc.kycStatus === "REJECTED" ? "🔴 KYC Verification Failed" : kyc.kycStatus === "MANUAL_REVIEW" ? "🟡 KYC Under Review" : "🟡 KYC Verification Pending"}
+                <h3 style={{ margin: "0 0 4px 0", color: kyc.kycStatus === "REJECTED" ? "#991b1b" : "#92400e", fontSize: "16px", fontWeight: 800, display: "flex", alignItems: "center", gap: "8px" }}>
+                  {kyc.kycStatus === "REJECTED" ? <><XCircleIcon size={20} /> KYC Verification Failed</> : kyc.kycStatus === "MANUAL_REVIEW" ? <><AlertTriangleIcon size={20} /> KYC Under Review</> : <><AlertTriangleIcon size={20} /> KYC Verification Pending</>}
                 </h3>
                 <p style={{ margin: 0, color: kyc.kycStatus === "REJECTED" ? "#7f1d1d" : "#78350f", fontSize: "14px", fontWeight: 500 }}>
                   {kyc.kycStatus === "REJECTED" ? "Identity validation failed. Please review your details and retry." : kyc.kycStatus === "MANUAL_REVIEW" ? "Your documents are uploaded and pending manual administrator approval." : "Please complete KYC verification to activate your wallet and start transferring money."}
@@ -287,8 +292,8 @@ function Dashboard() {
 
           {/* Greeting */}
           <div style={{ marginBottom: "28px" }}>
-            <h1 style={{ fontSize: "28px", fontWeight: 800, color: "#0f172a", marginBottom: "4px" }}>
-              Good {new Date().getHours() < 12 ? "Morning" : new Date().getHours() < 18 ? "Afternoon" : "Evening"}, {wallet?.user?.fullName?.split(" ")[0]} 👋
+            <h1 style={{ fontSize: "28px", fontWeight: 800, color: "#0f172a", marginBottom: "4px", display: "flex", alignItems: "center", gap: "10px" }}>
+              Good {new Date().getHours() < 12 ? "Morning" : new Date().getHours() < 18 ? "Afternoon" : "Evening"}, {wallet?.user?.fullName?.split(" ")[0]} <SparklesIcon size={26} color="#f59e0b" />
             </h1>
             <p style={{ color: "#64748b", fontSize: "15px" }}>Here's your wallet overview for today</p>
           </div>
@@ -377,7 +382,7 @@ function Dashboard() {
 
           {/* Quick Actions */}
           <h2 style={{ fontSize: "18px", fontWeight: 700, color: "#0f172a", marginBottom: "16px" }}>Quick Actions</h2>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: "16px", marginBottom: "32px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px", marginBottom: "32px" }}>
             {quickActions.map(action => (
               <div key={action.path} onClick={() => handleActionClick(action.path)}
                 style={{ background: "white", borderRadius: "20px", padding: "24px 20px",
@@ -640,6 +645,31 @@ function Dashboard() {
                 ))
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Scanned QR Result Card */}
+      {scannedUpi && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.85)", zIndex: 9999, display: "flex", justifyContent: "center", alignItems: "center", backdropFilter: "blur(10px)" }}>
+          <div style={{ background: "white", width: "380px", borderRadius: "28px", padding: "36px", textAlign: "center", boxShadow: "0 30px 90px rgba(0,0,0,0.3)" }}>
+            <div style={{ width: "72px", height: "72px", borderRadius: "50%", background: "linear-gradient(135deg,#10b981,#34d399)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+              <CheckIcon size={36} color="white" />
+            </div>
+            <h2 style={{ fontSize: "20px", fontWeight: 800, color: "#0f172a", margin: "0 0 8px 0" }}>QR Code Scanned!</h2>
+            <p style={{ color: "#64748b", fontSize: "13px", margin: "0 0 20px 0" }}>UPI ID detected successfully</p>
+            <div style={{ background: "#f8fafc", borderRadius: "14px", padding: "14px", marginBottom: "24px", border: "1px solid #e2e8f0" }}>
+              <p style={{ color: "#64748b", fontSize: "11px", fontWeight: 700, margin: "0 0 4px 0" }}>DETECTED UPI ID</p>
+              <p style={{ color: "#6366f1", fontWeight: 800, fontSize: "16px", margin: 0, wordBreak: "break-all" }}>{scannedUpi}</p>
+            </div>
+            <button onClick={() => { setScannedUpi(null); navigate("/transfer", { state: { scannedUpiId: scannedUpi } }); }}
+              style={{ width: "100%", padding: "14px", border: "none", borderRadius: "14px", background: "linear-gradient(135deg,#6366f1,#8b5cf6)", color: "white", fontWeight: 800, fontSize: "15px", cursor: "pointer", marginBottom: "10px", boxShadow: "0 8px 20px rgba(99,102,241,0.3)", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
+              <TransferIcon size={18} /> Pay Now
+            </button>
+            <button onClick={() => setScannedUpi(null)}
+              style={{ width: "100%", padding: "12px", border: "1px solid #e2e8f0", borderRadius: "14px", background: "white", color: "#64748b", fontWeight: 700, fontSize: "14px", cursor: "pointer" }}>
+              Cancel
+            </button>
           </div>
         </div>
       )}
